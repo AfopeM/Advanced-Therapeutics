@@ -7,6 +7,12 @@ interface SessionState {
   isLoaded: boolean;
   load: () => Promise<void>;
   getSessionsByPatient: (patientId: string) => Session[];
+  addSession: (session: Session) => Promise<void>;
+  updateSession: (
+    id: string,
+    updates: Partial<Omit<Session, "id">>,
+  ) => Promise<void>;
+  deleteSession: (id: string) => Promise<void>;
   deleteSessionsByPatient: (patientId: string) => Promise<void>;
 }
 
@@ -25,6 +31,34 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     );
   },
 
+  /** Adds a brand-new session to storage and state. Used by the Workspace. */
+  addSession: async (session: Session) => {
+    const sessions = { ...get().sessions, [session.id]: session };
+    await saveSessions(sessions);
+    set({ sessions });
+  },
+
+  /**
+   * Merges partial updates into one session.
+   * Used for: rename (update name), PatientInfoCard save (update pillValues).
+   */
+  updateSession: async (id: string, updates: Partial<Omit<Session, "id">>) => {
+    const sessions = { ...get().sessions };
+    if (!sessions[id]) return;
+    sessions[id] = { ...sessions[id], ...updates };
+    await saveSessions(sessions);
+    set({ sessions });
+  },
+
+  /** Removes a single session. Used by the delete-script flow in the Folder. */
+  deleteSession: async (id: string) => {
+    const sessions = { ...get().sessions };
+    delete sessions[id];
+    await saveSessions(sessions);
+    set({ sessions });
+  },
+
+  /** Removes ALL sessions for a patient. Used by the delete-patient flow. */
   deleteSessionsByPatient: async (patientId: string) => {
     const sessions = { ...get().sessions };
     for (const key of Object.keys(sessions)) {

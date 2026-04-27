@@ -4,11 +4,19 @@ import { usePatientStore } from "./shared/store/usePatientStore";
 import { useSessionStore } from "./shared/store/useSessionStore";
 import { Settings } from "./features/settings/Settings";
 import { Hub } from "./features/hub/Hub";
+import { Folder } from "./features/folder/Folder";
+
+type View = "hub" | "folder";
 
 export function App() {
   const { load: loadUser, name, isLoaded: userLoaded } = useUserStore();
   const { load: loadPatients } = usePatientStore();
   const { load: loadSessions } = useSessionStore();
+
+  // Which screen is visible
+  const [view, setView] = useState<View>("hub");
+  // Which patient's folder we're currently inside
+  const [currentPatientId, setCurrentPatientId] = useState<string | null>(null);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [guardrailMessage, setGuardrailMessage] = useState<
@@ -31,8 +39,19 @@ export function App() {
     setSettingsOpen(true);
   };
 
+  const handlePatientClick = (patientId: string) => {
+    setCurrentPatientId(patientId);
+    setView("folder");
+  };
+
+  const handleBackToHub = () => {
+    setCurrentPatientId(null);
+    setView("hub");
+  };
+
   if (!userLoaded) return null;
 
+  // Settings overlays any view
   if (settingsOpen) {
     return (
       <Settings
@@ -42,6 +61,18 @@ export function App() {
     );
   }
 
+  // Folder view
+  if (view === "folder" && currentPatientId) {
+    return (
+      <Folder
+        patientId={currentPatientId}
+        onBack={handleBackToHub}
+        onPatientDeleted={handleBackToHub}
+      />
+    );
+  }
+
+  // Hub view (default)
   return (
     <div className="flex flex-col h-screen">
       <div className="flex items-center justify-between p-4 border-b">
@@ -59,9 +90,7 @@ export function App() {
         <Hub
           userName={name}
           onOpenSettings={handleGuardrail}
-          onPatientClick={(_patientId) => {
-            // Phase 4: navigate to folder
-          }}
+          onPatientClick={handlePatientClick}
         />
       </div>
     </div>
