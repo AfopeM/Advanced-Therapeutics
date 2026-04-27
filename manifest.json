@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Advanced Therapeutics",
+  "version": "0.1.0",
+  "description": "Script manager with patient folders",
+  "permissions": ["storage", "sidePanel"],
+  "background": {
+    "service_worker": "src/background/service_worker.ts",
+    "type": "module"
+  },
+  "side_panel": {
+    "default_path": "src/sidepanel/sidepanel.html"
+  },
+  "action": {
+    "default_title": "Advanced Therapeutics"
+  }
+}
