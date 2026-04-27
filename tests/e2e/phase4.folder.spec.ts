@@ -4,7 +4,6 @@ import { loadExtension } from "../helpers/extension";
 const PANEL = (id: string) =>
   `chrome-extension://${id}/src/sidepanel/sidepanel.html`;
 
-// Seeds user + patients + sessions, then reloads
 async function seedStorage(page: Page, data: Record<string, unknown>) {
   await page.evaluate(async (d) => {
     await chrome.storage.local.set(d);
@@ -13,7 +12,6 @@ async function seedStorage(page: Page, data: Record<string, unknown>) {
   await page.waitForSelector('[data-testid="hub-view"]');
 }
 
-// Clicks the first patient card to open its folder
 async function openFirstFolder(page: Page) {
   await page.getByTestId("patient-card").first().click();
   await page.waitForSelector('[data-testid="folder-view"]');
@@ -97,7 +95,7 @@ test.describe("Phase 4 — Patient Folder", () => {
           id: "s1",
           patientId: "p1",
           name: "Call Script",
-          templateId: "intake",
+          templateId: "device_confirmation",
           pillValues: {},
           savedAt: 1700000000000,
         },
@@ -107,8 +105,9 @@ test.describe("Phase 4 — Patient Folder", () => {
     await openFirstFolder(page);
     await expect(page.getByTestId("session-card")).toHaveCount(1);
     await expect(page.getByTestId("template-badge")).toBeVisible();
-    // The badge should show the template name
-    await expect(page.getByTestId("template-badge")).toContainText("Intake");
+    await expect(page.getByTestId("template-badge")).toContainText(
+      "Device Confirmation",
+    );
     await context.close();
   });
 
@@ -124,7 +123,7 @@ test.describe("Phase 4 — Patient Folder", () => {
           id: "s1",
           patientId: "p1",
           name: "Script A",
-          templateId: "intake",
+          templateId: "device_confirmation",
           pillValues: {},
           savedAt: 2000,
         },
@@ -132,7 +131,7 @@ test.describe("Phase 4 — Patient Folder", () => {
           id: "s2",
           patientId: "p1",
           name: "Script B",
-          templateId: "medication",
+          templateId: "sx_center",
           pillValues: {},
           savedAt: 1000,
         },
@@ -142,13 +141,12 @@ test.describe("Phase 4 — Patient Folder", () => {
     await openFirstFolder(page);
 
     const badges = page.getByTestId("template-badge");
-    // intake badge should have blue color class
-    const intakeBadge = badges.filter({ hasText: "Intake" });
-    await expect(intakeBadge).toHaveClass(/text-blue-700/);
 
-    // medication badge should have purple color class
-    const medBadge = badges.filter({ hasText: "Medication" });
-    await expect(medBadge).toHaveClass(/text-purple-700/);
+    const dcBadge = badges.filter({ hasText: "Device Confirmation" });
+    await expect(dcBadge).toHaveClass(/text-blue-700/);
+
+    const sxBadge = badges.filter({ hasText: "SX Center" });
+    await expect(sxBadge).toHaveClass(/text-purple-700/);
     await context.close();
   });
 
@@ -164,7 +162,7 @@ test.describe("Phase 4 — Patient Folder", () => {
           id: "s1",
           patientId: "p1",
           name: "Script",
-          templateId: "intake",
+          templateId: "device_confirmation",
           pillValues: {},
           savedAt: 1000,
         },
@@ -175,7 +173,6 @@ test.describe("Phase 4 — Patient Folder", () => {
     await page.getByTestId("session-meatball").click();
     await expect(page.getByTestId("session-menu")).toBeVisible();
 
-    // Click the folder header (clearly outside the menu)
     await page.getByTestId("folder-patient-name").click();
     await expect(page.getByTestId("session-menu")).not.toBeVisible();
     await context.close();
@@ -193,7 +190,7 @@ test.describe("Phase 4 — Patient Folder", () => {
           id: "s1",
           patientId: "p1",
           name: "Old Name",
-          templateId: "intake",
+          templateId: "device_confirmation",
           pillValues: {},
           savedAt: 1000,
         },
@@ -223,16 +220,16 @@ test.describe("Phase 4 — Patient Folder", () => {
         s1: {
           id: "s1",
           patientId: "p1",
-          name: "Call Script",
-          templateId: "intake",
+          name: "Device Confirmation",
+          templateId: "device_confirmation",
           pillValues: {},
           savedAt: 2000,
         },
         s2: {
           id: "s2",
           patientId: "p1",
-          name: "Follow-Up",
-          templateId: "followup",
+          name: "SX Center Call",
+          templateId: "sx_center",
           pillValues: {},
           savedAt: 1000,
         },
@@ -241,19 +238,19 @@ test.describe("Phase 4 — Patient Folder", () => {
 
     await openFirstFolder(page);
 
-    // Rename "Follow-Up" (second card, sorted by savedAt desc) to "Call Script"
+    // Rename the second card (sorted last by savedAt) to match the first card's name
     const meatballs = page.getByTestId("session-meatball");
     await meatballs.last().click();
     await page.getByTestId("session-menu-rename").click();
-    await page.getByTestId("session-rename-input").fill("Call Script");
+    await page.getByTestId("session-rename-input").fill("Device Confirmation");
     await page.getByTestId("session-rename-input").press("Enter");
 
-    // No error should be shown — just auto-suffixed
+    // Input disappears — no error dialog, just auto-suffixed
     await expect(page.getByTestId("session-rename-input")).toHaveCount(0);
-    // One card should now be named "Call Script (2)"
+
     const cards = page.getByTestId("session-card");
     const names = await cards.allInnerTexts();
-    expect(names.some((t) => t.includes("Call Script (2)"))).toBe(true);
+    expect(names.some((t) => t.includes("Device Confirmation (2)"))).toBe(true);
     await context.close();
   });
 
@@ -268,16 +265,16 @@ test.describe("Phase 4 — Patient Folder", () => {
         s1: {
           id: "s1",
           patientId: "p1",
-          name: "Call Script",
-          templateId: "intake",
+          name: "Device Confirmation",
+          templateId: "device_confirmation",
           pillValues: {},
           savedAt: 3000,
         },
         s2: {
           id: "s2",
           patientId: "p1",
-          name: "Call Script (2)",
-          templateId: "intake",
+          name: "Device Confirmation (2)",
+          templateId: "device_confirmation",
           pillValues: {},
           savedAt: 2000,
         },
@@ -285,7 +282,7 @@ test.describe("Phase 4 — Patient Folder", () => {
           id: "s3",
           patientId: "p1",
           name: "Other",
-          templateId: "custom",
+          templateId: "wc_call_scheduling",
           pillValues: {},
           savedAt: 1000,
         },
@@ -294,16 +291,16 @@ test.describe("Phase 4 — Patient Folder", () => {
 
     await openFirstFolder(page);
 
-    // Rename "Other" to "Call Script" — should land on "Call Script (3)"
+    // Rename "Other" to "Device Confirmation" — should land on "(3)"
     const meatballs = page.getByTestId("session-meatball");
     await meatballs.last().click();
     await page.getByTestId("session-menu-rename").click();
-    await page.getByTestId("session-rename-input").fill("Call Script");
+    await page.getByTestId("session-rename-input").fill("Device Confirmation");
     await page.getByTestId("session-rename-input").press("Enter");
 
     const cards = page.getByTestId("session-card");
     const names = await cards.allInnerTexts();
-    expect(names.some((t) => t.includes("Call Script (3)"))).toBe(true);
+    expect(names.some((t) => t.includes("Device Confirmation (3)"))).toBe(true);
     await context.close();
   });
 
@@ -319,7 +316,7 @@ test.describe("Phase 4 — Patient Folder", () => {
           id: "s1",
           patientId: "p1",
           name: "My Script",
-          templateId: "intake",
+          templateId: "device_confirmation",
           pillValues: {},
           savedAt: 1000,
         },
@@ -347,7 +344,7 @@ test.describe("Phase 4 — Patient Folder", () => {
           id: "s1",
           patientId: "p1",
           name: "My Script",
-          templateId: "intake",
+          templateId: "device_confirmation",
           pillValues: {},
           savedAt: 1000,
         },
@@ -379,16 +376,16 @@ test.describe("Phase 4 — Patient Folder", () => {
           id: "s1",
           patientId: "p1",
           name: "Script A",
-          templateId: "intake",
-          pillValues: { Medication: "Metformin", Dose: "500mg" },
+          templateId: "device_confirmation",
+          pillValues: { device: "TENS Unit", body_part: "Lower Back" },
           savedAt: 2000,
         },
         s2: {
           id: "s2",
           patientId: "p1",
           name: "Script B",
-          templateId: "followup",
-          pillValues: { Allergies: "Penicillin" },
+          templateId: "sx_center",
+          pillValues: { insurance_type: "Medicare" },
           savedAt: 1000,
         },
       },
@@ -396,12 +393,14 @@ test.describe("Phase 4 — Patient Folder", () => {
 
     await openFirstFolder(page);
     await expect(page.getByTestId("patient-info-card")).toBeVisible();
-    await expect(page.getByTestId("info-pill-value-Medication")).toHaveText(
-      "Metformin",
+    await expect(page.getByTestId("info-pill-value-device")).toHaveText(
+      "TENS Unit",
     );
-    await expect(page.getByTestId("info-pill-value-Dose")).toHaveText("500mg");
-    await expect(page.getByTestId("info-pill-value-Allergies")).toHaveText(
-      "Penicillin",
+    await expect(page.getByTestId("info-pill-value-body_part")).toHaveText(
+      "Lower Back",
+    );
+    await expect(page.getByTestId("info-pill-value-insurance_type")).toHaveText(
+      "Medicare",
     );
     await context.close();
   });
@@ -418,8 +417,8 @@ test.describe("Phase 4 — Patient Folder", () => {
           id: "s1",
           patientId: "p1",
           name: "Script A",
-          templateId: "intake",
-          pillValues: { Medication: "Metformin" },
+          templateId: "device_confirmation",
+          pillValues: { device: "TENS Unit" },
           savedAt: 1000,
         },
       },
@@ -427,20 +426,18 @@ test.describe("Phase 4 — Patient Folder", () => {
 
     await openFirstFolder(page);
     await page.getByTestId("info-card-edit").click();
-    await page.getByTestId("info-pill-input-Medication").fill("Lisinopril");
+    await page.getByTestId("info-pill-input-device").fill("Knee Brace");
     await page.getByTestId("info-card-save").click();
 
-    // UI should update immediately
-    await expect(page.getByTestId("info-pill-value-Medication")).toHaveText(
-      "Lisinopril",
+    await expect(page.getByTestId("info-pill-value-device")).toHaveText(
+      "Knee Brace",
     );
 
-    // Storage should be updated too
     const raw = await page.evaluate(() => chrome.storage.local.get("sessions"));
     const sessions = Object.values(
       raw.sessions as Record<string, { pillValues: Record<string, string> }>,
     );
-    expect(sessions[0].pillValues["Medication"]).toBe("Lisinopril");
+    expect(sessions[0].pillValues["device"]).toBe("Knee Brace");
     await context.close();
   });
 
@@ -456,7 +453,7 @@ test.describe("Phase 4 — Patient Folder", () => {
           id: "s1",
           patientId: "p1",
           name: "Script",
-          templateId: "intake",
+          templateId: "device_confirmation",
           pillValues: {},
           savedAt: 1000,
         },
@@ -464,7 +461,7 @@ test.describe("Phase 4 — Patient Folder", () => {
           id: "s2",
           patientId: "p1",
           name: "Script 2",
-          templateId: "followup",
+          templateId: "sx_center",
           pillValues: {},
           savedAt: 2000,
         },
@@ -491,7 +488,7 @@ test.describe("Phase 4 — Patient Folder", () => {
           id: "s1",
           patientId: "p1",
           name: "Script",
-          templateId: "intake",
+          templateId: "device_confirmation",
           pillValues: {},
           savedAt: 1000,
         },
@@ -502,11 +499,9 @@ test.describe("Phase 4 — Patient Folder", () => {
     await page.getByTestId("folder-delete-patient").click();
     await page.getByTestId("confirm-ok").click();
 
-    // Should be back on the hub
     await expect(page.getByTestId("hub-view")).toBeVisible();
     await expect(page.getByTestId("patient-card")).toHaveCount(0);
 
-    // Storage should be clean
     const raw = await page.evaluate(() =>
       chrome.storage.local.get(["patients", "sessions"]),
     );
