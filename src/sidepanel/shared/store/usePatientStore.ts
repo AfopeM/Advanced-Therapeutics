@@ -10,6 +10,7 @@ interface PatientState {
   addPatient: (name: string) => Promise<Patient>;
   renamePatient: (id: string, newName: string) => Promise<void>;
   deletePatient: (id: string) => Promise<void>;
+  updateSharedPillValues: (id: string, values: Record<string, string>) => Promise<void>;
 }
 
 export const usePatientStore = create<PatientState>((set, get) => ({
@@ -40,6 +41,20 @@ export const usePatientStore = create<PatientState>((set, get) => ({
     await savePatients(patients);
     set({ patients });
   },
+
+updateSharedPillValues: async (id: string, values: Record<string, string>) => {
+  const patients = { ...get().patients };
+  if (!patients[id]) return;
+  patients[id] = {
+    ...patients[id],
+    sharedPillValues: {
+      ...(patients[id].sharedPillValues ?? {}),
+      ...values,
+    },
+  };
+  await savePatients(patients);
+  set({ patients });
+},
 
   deletePatient: async (id: string) => {
     const patients = { ...get().patients };

@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
-import type { Session } from "../../shared/schemas/session.schema";
+// import type { Session } from "../../shared/schemas/session.schema";
 
 interface PatientInfoCardProps {
-  /** All sessions for this patient, already filtered by patientId */
-  sessions: Session[];
-  /** Called with the merged pill values the user edited. Caller saves to storage. */
+  sharedPillValues: Record<string, string>;
   onSave: (pillValues: Record<string, string>) => void;
 }
 
@@ -13,34 +11,31 @@ interface PatientInfoCardProps {
  * If the same pill key appears in multiple sessions, the value from the
  * most recently saved session wins (sort by savedAt descending).
  */
-function aggregatePillValues(sessions: Session[]): Record<string, string> {
-  const sorted = [...sessions].sort((a, b) => b.savedAt - a.savedAt);
-  const result: Record<string, string> = {};
-  for (const session of sorted) {
-    for (const [key, value] of Object.entries(session.pillValues)) {
-      // First writer wins — we're iterating most-recent first
-      if (!(key in result)) {
-        result[key] = value;
-      }
-    }
-  }
-  return result;
-}
+// function aggregatePillValues(sessions: Session[]): Record<string, string> {
+//   const sorted = [...sessions].sort((a, b) => b.savedAt - a.savedAt);
+//   const result: Record<string, string> = {};
+//   for (const session of sorted) {
+//     for (const [key, value] of Object.entries(session.pillValues)) {
+//       // First writer wins — we're iterating most-recent first
+//       if (!(key in result)) {
+//         result[key] = value;
+//       }
+//     }
+//   }
+//   return result;
+// }
 
-export function PatientInfoCard({ sessions, onSave }: PatientInfoCardProps) {
+export function PatientInfoCard({
+  sharedPillValues,
+  onSave,
+}: PatientInfoCardProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [draftValues, setDraftValues] = useState<Record<string, string>>({});
 
-  // Recompute the aggregate whenever the sessions list changes
-  const aggregated = aggregatePillValues(sessions);
-  const pillKeys = Object.keys(aggregated);
+  const pillKeys = Object.keys(sharedPillValues);
 
-  // Sync draft when we enter edit mode
   useEffect(() => {
-    if (isEditing) {
-      setDraftValues({ ...aggregated });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (isEditing) setDraftValues({ ...sharedPillValues });
   }, [isEditing]);
 
   const handleSave = () => {
@@ -110,7 +105,7 @@ export function PatientInfoCard({ sessions, onSave }: PatientInfoCardProps) {
                   data-testid={`info-pill-value-${key}`}
                   className="text-sm text-gray-800"
                 >
-                  {aggregated[key] || (
+                  {sharedPillValues[key] || (
                     <span className="text-gray-400 italic">—</span>
                   )}
                 </dd>

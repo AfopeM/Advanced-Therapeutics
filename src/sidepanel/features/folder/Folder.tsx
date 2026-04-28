@@ -24,7 +24,7 @@ export function Folder({
   onPatientDeleted,
   onOpenWorkspace,
 }: FolderProps) {
-  const { patients, deletePatient } = usePatientStore();
+  const { patients, deletePatient, updateSharedPillValues } = usePatientStore();
   const {
     getSessionsByPatient,
     deleteSession,
@@ -73,14 +73,6 @@ export function Folder({
         onPatientDeleted();
       },
     });
-  };
-
-  const handleInfoCardSave = (pillValues: Record<string, string>) => {
-    for (const session of sessions) {
-      updateSession(session.id, {
-        pillValues: { ...session.pillValues, ...pillValues },
-      });
-    }
   };
 
   const sorted = [...sessions].sort((a, b) => b.savedAt - a.savedAt);
@@ -181,7 +173,10 @@ export function Folder({
 
       {/* Patient Info Card */}
       <div className="p-3 border-t">
-        <PatientInfoCard sessions={sessions} onSave={handleInfoCardSave} />
+        <PatientInfoCard
+          sharedPillValues={patient.sharedPillValues ?? {}}
+          onSave={(values) => updateSharedPillValues(patientId, values)}
+        />
       </div>
 
       {/* Confirm dialog */}
