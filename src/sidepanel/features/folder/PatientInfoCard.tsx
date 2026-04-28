@@ -1,29 +1,9 @@
 import { useState, useEffect } from "react";
-// import type { Session } from "../../shared/schemas/session.schema";
 
 interface PatientInfoCardProps {
   sharedPillValues: Record<string, string>;
   onSave: (pillValues: Record<string, string>) => void;
 }
-
-/**
- * Merges pill values across all sessions.
- * If the same pill key appears in multiple sessions, the value from the
- * most recently saved session wins (sort by savedAt descending).
- */
-// function aggregatePillValues(sessions: Session[]): Record<string, string> {
-//   const sorted = [...sessions].sort((a, b) => b.savedAt - a.savedAt);
-//   const result: Record<string, string> = {};
-//   for (const session of sorted) {
-//     for (const [key, value] of Object.entries(session.pillValues)) {
-//       // First writer wins — we're iterating most-recent first
-//       if (!(key in result)) {
-//         result[key] = value;
-//       }
-//     }
-//   }
-//   return result;
-// }
 
 export function PatientInfoCard({
   sharedPillValues,

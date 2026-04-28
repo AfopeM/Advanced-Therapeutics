@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { usePatientStore } from "../../shared/store/usePatientStore";
 import { useSessionStore } from "../../shared/store/useSessionStore";
 import { SessionCard } from "./SessionCard";
@@ -34,6 +34,20 @@ export function Folder({
 
   const patient = patients[patientId];
   const sessions = getSessionsByPatient(patientId);
+
+  const aggregatedPillValues = useMemo(() => {
+    const fromSessions = [...sessions]
+      .sort((a, b) => b.savedAt - a.savedAt)
+      .reduce<Record<string, string>>((acc, s) => {
+        for (const [key, value] of Object.entries(s.pillValues)) {
+          if (!(key in acc) && value.trim()) acc[key] = value;
+        }
+        return acc;
+      }, {});
+
+    // sharedPillValues (manually set or workspace-written) win over session aggregation
+    return { ...fromSessions, ...(patient?.sharedPillValues ?? {}) };
+  }, [sessions, patient?.sharedPillValues]);
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
@@ -174,7 +188,7 @@ export function Folder({
       {/* Patient Info Card */}
       <div className="p-3 border-t">
         <PatientInfoCard
-          sharedPillValues={patient.sharedPillValues ?? {}}
+          sharedPillValues={aggregatedPillValues}
           onSave={(values) => updateSharedPillValues(patientId, values)}
         />
       </div>

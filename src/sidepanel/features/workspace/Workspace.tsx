@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { usePatientStore } from "../../shared/store/usePatientStore";
 import { useSessionStore } from "../../shared/store/useSessionStore";
 import { useUserStore } from "../../shared/store/useUserStore";
@@ -46,6 +46,15 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
 
   // All pills = template pills + any custom pills added by the user
   const allPills = [...template.pills, ...customPills];
+
+  const [scriptText, setScriptText] = useState(
+    existingSession ? template.script_text : template.script_text,
+  );
+
+  // Reset when template changes
+  useEffect(() => {
+    setScriptText(getTemplate(templateId).script_text);
+  }, [templateId]);
 
   // --- Pill handlers ---
   const handleValueChange = (key: string, value: string) => {
@@ -184,9 +193,11 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
         {/* Canvas — right column */}
         <div className="flex-1 overflow-hidden p-3">
           <Canvas
-            scriptText={template.script_text}
+            scriptText={scriptText} // local state, initialized from template
             pillValues={pillValues}
             userName={userName}
+            templateKey={templateId} // ← this drives full re-renders
+            onScriptChange={setScriptText} // ← local state setter
           />
         </div>
       </div>
