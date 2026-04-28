@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { loadExtension } from "../helpers/extension";
 
-test.describe("Phase 2 — Settings & User Name", () => {
+test.describe("Settings & User Name", () => {
   test("settings overlay is hidden by default", async () => {
     const { context, extensionId } = await loadExtension();
     const page = await context.newPage();

@@ -29,7 +29,7 @@ async function addPatient(page: Page, name: string) {
   await page.getByTestId("new-patient-submit").click();
 }
 
-test.describe("Phase 3 — Hub View", () => {
+test.describe("Hub View", () => {
   test("hub shows empty state when no patients exist", async () => {
     const { context, extensionId } = await loadExtension();
     const page = await context.newPage();

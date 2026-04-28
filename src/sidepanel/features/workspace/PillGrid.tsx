@@ -3,6 +3,11 @@ import type { TemplatePill } from "../../../defaults/templates";
 
 interface PillGridProps {
   pills: TemplatePill[];
+  /**
+   * Keys that were created by the user via "+ Add field".
+   * Only these pills show the × delete button.
+   */
+  customPillKeys: Set<string>;
   pillValues: Record<string, string>;
   onValueChange: (key: string, value: string) => void;
   onAddPill: (pill: TemplatePill) => void;
@@ -11,6 +16,7 @@ interface PillGridProps {
 
 export function PillGrid({
   pills,
+  customPillKeys,
   pillValues,
   onValueChange,
   onAddPill,
@@ -22,7 +28,7 @@ export function PillGrid({
   const handleAdd = () => {
     const label = newLabel.trim();
     if (!label) return;
-    // Convert label to a snake_case key: "My Field" → "my_field"
+    // "Patient Full Name" → "patient_full_name"
     const key = label.toLowerCase().replace(/\s+/g, "_");
     onAddPill({ key, label });
     setNewLabel("");
@@ -37,27 +43,32 @@ export function PillGrid({
             <label className="text-xs font-medium text-gray-600">
               {pill.label}
             </label>
-            <button
-              data-testid={`delete-pill-${pill.key}`}
-              onClick={() => onDeletePill(pill.key)}
-              className="text-xs text-gray-300 hover:text-red-400"
-              aria-label={`Remove ${pill.label}`}
-            >
-              ✕
-            </button>
+
+            {/* Delete button only visible for custom (user-created) pills */}
+            {customPillKeys.has(pill.key) && (
+              <button
+                data-testid={`delete-pill-${pill.key}`}
+                onClick={() => onDeletePill(pill.key)}
+                className="text-xs text-gray-300 hover:text-red-400 transition-colors"
+                aria-label={`Remove ${pill.label}`}
+              >
+                ✕
+              </button>
+            )}
           </div>
+
           <input
             data-testid={`pill-input-${pill.key}`}
             type="text"
             value={pillValues[pill.key] ?? ""}
             onChange={(e) => onValueChange(pill.key, e.target.value)}
-            className="border rounded px-2 py-1 text-sm"
-            placeholder={`[${pill.key}]`}
+            className="border border-dashed rounded px-2 py-1 text-sm focus:outline-none focus:border-purple-400"
+            placeholder={pill.label}
           />
         </div>
       ))}
 
-      {/* Add pill */}
+      {/* "+ Add field" form */}
       {isAdding ? (
         <div className="flex gap-2 mt-1">
           <input
@@ -70,7 +81,7 @@ export function PillGrid({
               if (e.key === "Enter") handleAdd();
               if (e.key === "Escape") setIsAdding(false);
             }}
-            className="flex-1 border rounded px-2 py-1 text-sm"
+            className="flex-1 border border-dashed rounded px-2 py-1 text-sm focus:outline-none focus:border-purple-400"
             autoFocus
           />
           <button
