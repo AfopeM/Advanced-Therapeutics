@@ -10,6 +10,7 @@ interface FolderProps {
   patientId: string;
   onBack: () => void;
   onPatientDeleted: () => void;
+  onOpenWorkspace: (sessionId: string | null) => void;
 }
 
 interface ConfirmState {
@@ -17,7 +18,12 @@ interface ConfirmState {
   onConfirm: () => void;
 }
 
-export function Folder({ patientId, onBack, onPatientDeleted }: FolderProps) {
+export function Folder({
+  patientId,
+  onBack,
+  onPatientDeleted,
+  onOpenWorkspace,
+}: FolderProps) {
   const { patients, deletePatient } = usePatientStore();
   const {
     getSessionsByPatient,
@@ -156,12 +162,21 @@ export function Folder({ patientId, onBack, onPatientDeleted }: FolderProps) {
               onCloseMenu={() => setOpenMenuId(null)}
               onRename={handleRenameSession(session)}
               onDelete={() => handleDeleteSession(session)}
-              onClick={() => {
-                // Phase 5: navigate to workspace
-              }}
+              onClick={() => onOpenWorkspace(session.id)}
             />
           ))
         )}
+      </div>
+
+      {/* New script button */}
+      <div className="px-3 pt-2">
+        <button
+          data-testid="new-script-btn"
+          onClick={() => onOpenWorkspace(null)}
+          className="text-sm text-purple-600 underline"
+        >
+          + New Script
+        </button>
       </div>
 
       {/* Patient Info Card */}

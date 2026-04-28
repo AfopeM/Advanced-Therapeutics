@@ -5,8 +5,9 @@ import { useSessionStore } from "./shared/store/useSessionStore";
 import { Settings } from "./features/settings/Settings";
 import { Hub } from "./features/hub/Hub";
 import { Folder } from "./features/folder/Folder";
+import { Workspace } from "./features/workspace/Workspace";
 
-type View = "hub" | "folder";
+type View = "hub" | "folder" | "workspace";
 
 export function App() {
   const { load: loadUser, name, isLoaded: userLoaded } = useUserStore();
@@ -17,6 +18,7 @@ export function App() {
   const [view, setView] = useState<View>("hub");
   // Which patient's folder we're currently inside
   const [currentPatientId, setCurrentPatientId] = useState<string | null>(null);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [guardrailMessage, setGuardrailMessage] = useState<
@@ -49,6 +51,16 @@ export function App() {
     setView("hub");
   };
 
+  const handleOpenWorkspace = (sessionId: string | null) => {
+    setCurrentSessionId(sessionId);
+    setView("workspace");
+  };
+
+  const handleBackFromWorkspace = () => {
+    setCurrentSessionId(null);
+    setView("folder");
+  };
+
   if (!userLoaded) return null;
 
   // Settings overlays any view
@@ -68,6 +80,17 @@ export function App() {
         patientId={currentPatientId}
         onBack={handleBackToHub}
         onPatientDeleted={handleBackToHub}
+        onOpenWorkspace={handleOpenWorkspace}
+      />
+    );
+  }
+
+  if (view === "workspace" && currentPatientId) {
+    return (
+      <Workspace
+        patientId={currentPatientId}
+        sessionId={currentSessionId}
+        onBack={handleBackFromWorkspace}
       />
     );
   }

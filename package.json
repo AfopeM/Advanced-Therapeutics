@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:e2e:phases": "playwright test tests/e2e/phase2.settings.spec.ts tests/e2e/phase3.hub.spec.ts tests/e2e/phase4.folder.spec.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.4",
