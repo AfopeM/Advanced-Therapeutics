@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import type { Patient } from "../../shared/schemas/patient.schema";
+import { formatRelativeDate } from "../../shared/utils";
 
 const AVATAR_COLORS = [
   "bg-purple-500",
@@ -23,6 +24,7 @@ function getAvatarColor(id: string): string {
 interface PatientCardProps {
   patient: Patient;
   scriptCount: number;
+  lastActivityAt: number;
   isMenuOpen: boolean;
   onMeatballClick: (e: React.MouseEvent) => void;
   onCloseMenu: () => void;
@@ -34,6 +36,7 @@ interface PatientCardProps {
 export function PatientCard({
   patient,
   scriptCount,
+  lastActivityAt,
   isMenuOpen,
   onMeatballClick,
   onCloseMenu,
@@ -79,25 +82,29 @@ export function PatientCard({
   return (
     <div
       data-testid="patient-card"
-      className="flex items-center gap-3 p-3 rounded-lg border bg-white hover:bg-gray-50 cursor-pointer"
+      className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md hover:border-gray-200 cursor-pointer transition-all"
       onClick={isRenaming ? undefined : onClick}
     >
       {/* Avatar */}
       <div
-        className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-sm flex-shrink-0 ${getAvatarColor(patient.id)}`}
+        className={`w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 ${getAvatarColor(patient.id)}`}
       >
-        {patient.name[0]?.toUpperCase()}
+        {patient.name
+          .split(" ")
+          .slice(0, 2)
+          .map((w) => w[0])
+          .join("")
+          .toUpperCase()}
       </div>
 
-      {/* Name + rename input */}
+      {/* Name + date / rename input */}
       <div
         className="flex-1 min-w-0"
         onClick={(e) => isRenaming && e.stopPropagation()}
       >
-        {/* patient-name stays in the DOM even during rename (just hidden) so tests can check it */}
         <p
           data-testid="patient-name"
-          className={`text-sm font-medium truncate ${isRenaming ? "hidden" : ""}`}
+          className={`text-sm font-semibold text-gray-800 truncate ${isRenaming ? "hidden" : ""}`}
         >
           {patient.name}
         </p>
@@ -107,7 +114,7 @@ export function PatientCard({
             <input
               ref={inputRef}
               data-testid="patient-rename-input"
-              className="w-full border rounded px-2 py-1 text-sm"
+              className="w-full border border-gray-200 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#7A9E2E]/30"
               value={renameValue}
               onChange={(e) => setRenameValue(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -123,11 +130,18 @@ export function PatientCard({
             )}
           </div>
         ) : (
-          <p className="text-xs text-gray-400">
-            {scriptCount} {scriptCount === 1 ? "script" : "scripts"}
+          <p className="text-xs text-gray-400 mt-0.5">
+            {formatRelativeDate(lastActivityAt)}
           </p>
         )}
       </div>
+
+      {/* Script count badge */}
+      {!isRenaming && (
+        <span className="flex-shrink-0 text-xs font-semibold text-[#5C7D20] bg-[#EEF6DC] px-2.5 py-1 rounded-md">
+          {scriptCount} {scriptCount === 1 ? "Script" : "Script"}
+        </span>
+      )}
 
       {/* Meatball menu */}
       <div
@@ -136,21 +150,21 @@ export function PatientCard({
       >
         <button
           data-testid="patient-meatball"
-          className="p-1 rounded hover:bg-gray-200 text-gray-500 text-lg leading-none"
+          className="p-1 rounded-full cursor-pointer hover:bg-gray-100 text-gray-400 text-lg leading-none transition-colors"
           onClick={onMeatballClick}
           aria-label="Patient options"
         >
-          ⋯
+          ⋮
         </button>
 
         {isMenuOpen && (
           <div
             data-testid="patient-menu"
-            className="absolute right-0 top-full mt-1 w-36 bg-white border rounded shadow-lg z-10"
+            className="absolute right-0 top-full mt-1 w-36 bg-white border border-gray-100 rounded-xl shadow-lg z-10 overflow-hidden"
           >
             <button
               data-testid="patient-menu-rename"
-              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50"
+              className="w-full cursor-pointer text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
               onClick={() => {
                 onCloseMenu();
                 startRename();
@@ -160,7 +174,7 @@ export function PatientCard({
             </button>
             <button
               data-testid="patient-menu-delete"
-              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+              className="w-full cursor-pointer text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50"
               onClick={() => {
                 onCloseMenu();
                 onDelete();

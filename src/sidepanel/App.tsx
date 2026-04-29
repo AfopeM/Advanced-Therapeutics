@@ -6,6 +6,7 @@ import { Settings } from "./features/settings/Settings";
 import { Hub } from "./features/hub/Hub";
 import { Folder } from "./features/folder/Folder";
 import { Workspace } from "./features/workspace/Workspace";
+import shieldCheckIcon from "../assets/icons/shield-check.svg";
 
 type View = "hub" | "folder" | "workspace";
 
@@ -97,24 +98,42 @@ export function App() {
 
   // Hub view (default)
   return (
-    <div className="flex flex-col h-screen">
-      <div className="flex items-center justify-between p-4 border-b">
-        <h1 className="text-base font-semibold">Call Scripts</h1>
+    <div className="flex flex-col h-screen bg-gray-50">
+      {/* ── Green branded header ── */}
+      <div className="bg-[#7A9E2E] px-4 py-3 flex items-center justify-between flex-shrink-0">
+        <div>
+          <p className="text-white font-black text-lg leading-none tracking-wider">
+            ADVANCED
+          </p>
+          <p className="text-white/80 font-semibold text-[11px] leading-none tracking-[0.22em] mt-1">
+            THERAPEUTICS
+          </p>
+        </div>
         <button
           data-testid="burger-menu"
           onClick={() => setSettingsOpen(true)}
-          className="text-xl"
+          className="text-white text-2xl leading-none p-1"
+          aria-label="Open settings"
         >
           ☰
         </button>
       </div>
 
+      {/* ── Hub fills remaining space ── */}
       <div className="flex-1 overflow-hidden">
         <Hub
           userName={name}
           onOpenSettings={handleGuardrail}
           onPatientClick={handlePatientClick}
         />
+      </div>
+
+      {/* ── Footer ── */}
+      <div className="flex items-center justify-center gap-2 py-2.5 bg-white border-t border-gray-100 flex-shrink-0">
+        <img src={shieldCheckIcon} alt="" className="w-3.5 h-3.5 opacity-40" />
+        <span className="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
+          All data is stored locally on this device.
+        </span>
       </div>
     </div>
   );
