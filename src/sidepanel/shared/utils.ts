@@ -39,3 +39,17 @@ export function formatRelativeDate(timestamp: number): string {
   if (diffDays < 7) return `${diffDays} Days Ago • ${time}`;
   return `${new Date(timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" })} • ${time}`;
 }
+
+export function formatScriptDate(timestamp: number): string {
+  const d = new Date(timestamp);
+  const date = d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  const time = d.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  return `${date} • ${time}`;
+}

@@ -5,6 +5,8 @@ import { SessionCard } from "./SessionCard";
 import { PatientInfoCard } from "./PatientInfoCard";
 import { getUniqueSessionName } from "../../shared/utils";
 import type { Session } from "../../shared/schemas/session.schema";
+import plusIcon from "../../../assets/icons/plus.svg";
+import shieldCheckIcon from "../../../assets/icons/shield-check.svg";
 
 interface FolderProps {
   patientId: string;
@@ -44,16 +46,18 @@ export function Folder({
         }
         return acc;
       }, {});
-
-    // sharedPillValues (manually set or workspace-written) win over session aggregation
     return { ...fromSessions, ...(patient?.sharedPillValues ?? {}) };
   }, [sessions, patient?.sharedPillValues]);
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [confirmState, setConfirmState] = useState<ConfirmState | null>(null);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
 
   useEffect(() => {
-    const handler = () => setOpenMenuId(null);
+    const handler = () => {
+      setOpenMenuId(null);
+      setHeaderMenuOpen(false);
+    };
     document.addEventListener("click", handler);
     return () => document.removeEventListener("click", handler);
   }, []);
@@ -65,7 +69,6 @@ export function Folder({
         acc[s.id] = { name: s.name };
         return acc;
       }, {});
-
     const finalName = getUniqueSessionName(rawName, otherSessions);
     updateSession(session.id, { name: finalName, savedAt: Date.now() });
   };
@@ -91,121 +94,161 @@ export function Folder({
 
   const sorted = [...sessions].sort((a, b) => b.savedAt - a.savedAt);
 
-  // Guard: patient not found (should not happen in normal flow).
-  // Still renders folder-view testid so Playwright can at least see the component.
   if (!patient) {
     return (
-      <div data-testid="folder-view" className="flex flex-col h-screen">
-        <div className="flex items-center gap-3 p-4 border-b">
+      <div
+        data-testid="folder-view"
+        className="flex flex-col h-screen bg-gray-100"
+      >
+        <div className="bg-[#7A9E2E] px-4 py-3 flex items-center gap-3">
           <button
             data-testid="folder-back"
             onClick={onBack}
-            className="text-xl font-bold"
+            className="text-white text-2xl font-bold"
           >
-            ←
+            ‹
           </button>
-          <h1 className="flex-1 text-base font-semibold text-gray-400">
+          <h1 className="flex-1 text-white font-bold text-lg">
             Patient not found
           </h1>
         </div>
         <p className="p-4 text-sm text-gray-400">
-          This patient's record could not be loaded. Please go back and try
-          again.
+          This patient's record could not be loaded.
         </p>
       </div>
     );
   }
 
   return (
-    <div data-testid="folder-view" className="flex flex-col h-screen">
-      {/* Header */}
-      <div className="flex items-center gap-3 p-4 border-b">
+    <div
+      data-testid="folder-view"
+      className="flex flex-col h-screen bg-gray-100"
+    >
+      {/* ── Green header ── */}
+      <div className="bg-[#7A9E2E] px-4 py-3 flex items-center gap-3 flex-shrink-0">
         <button
           data-testid="folder-back"
           onClick={onBack}
-          className="text-xl font-bold"
+          className="text-white text-2xl font-bold leading-none p-1 -ml-1"
           aria-label="Back to Hub"
         >
-          ←
+          ‹
         </button>
         <h1
           data-testid="folder-patient-name"
-          className="flex-1 text-base font-semibold truncate"
+          className="flex-1 text-white font-bold text-lg truncate"
         >
           {patient.name}
         </h1>
-        <button
-          data-testid="folder-delete-patient"
-          onClick={handleDeletePatient}
-          className="text-xs text-red-500 underline"
-          aria-label="Delete patient"
-        >
-          Delete patient
-        </button>
-      </div>
 
-      {/* Session list */}
-      <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
-        {sorted.length === 0 ? (
-          <p
-            data-testid="folder-empty-state"
-            className="text-sm text-gray-400 text-center mt-10"
+        {/* Header meatball — contains delete patient */}
+        <div className="relative" onClick={(e) => e.stopPropagation()}>
+          <button
+            className="text-white/80 text-2xl leading-none p-1"
+            onClick={() => setHeaderMenuOpen((prev) => !prev)}
+            aria-label="Patient options"
           >
-            No scripts yet. Open the workspace to create one.
-          </p>
-        ) : (
-          sorted.map((session) => (
-            <SessionCard
-              key={session.id}
-              session={session}
-              isMenuOpen={openMenuId === session.id}
-              onMeatballClick={(e) => {
-                e.stopPropagation();
-                setOpenMenuId((prev) =>
-                  prev === session.id ? null : session.id,
-                );
-              }}
-              onCloseMenu={() => setOpenMenuId(null)}
-              onRename={handleRenameSession(session)}
-              onDelete={() => handleDeleteSession(session)}
-              onClick={() => onOpenWorkspace(session.id)}
+            ⋮
+          </button>
+          {headerMenuOpen && (
+            <div className="absolute right-0 top-full mt-1 w-44 bg-white border border-gray-100 rounded-xl shadow-lg z-20 overflow-hidden">
+              <button
+                data-testid="folder-delete-patient"
+                onClick={() => {
+                  setHeaderMenuOpen(false);
+                  handleDeletePatient();
+                }}
+                className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-red-50 font-medium"
+              >
+                Delete Patient
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Scrollable body ── */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Patient Info Card */}
+        <div className="px-4 pt-4">
+          <PatientInfoCard
+            sharedPillValues={aggregatedPillValues}
+            onSave={(values) => updateSharedPillValues(patientId, values)}
+          />
+        </div>
+
+        {/* New Script button */}
+        <div className="px-4 py-4">
+          <button
+            data-testid="new-script-btn"
+            onClick={() => onOpenWorkspace(null)}
+            className="w-full bg-[#7A9E2E] hover:bg-[#6B8D28] active:bg-[#5F7D25] text-white font-semibold rounded-xl py-3.5 flex items-center justify-center gap-2.5 shadow-sm transition-colors"
+          >
+            <img
+              src={plusIcon}
+              alt=""
+              className="w-5 h-5 brightness-0 invert"
             />
-          ))
-        )}
+            New Script
+          </button>
+        </div>
+
+        {/* Scripts section */}
+        <div className="px-4 pb-4">
+          <p className="text-sm font-semibold text-gray-800 mb-3">Scripts</p>
+
+          {sorted.length === 0 ? (
+            <p
+              data-testid="folder-empty-state"
+              className="text-sm text-gray-400 text-center py-8"
+            >
+              No scripts yet. Tap "New Script" to create one.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {sorted.map((session) => (
+                <SessionCard
+                  key={session.id}
+                  session={session}
+                  isMenuOpen={openMenuId === session.id}
+                  onMeatballClick={(e) => {
+                    e.stopPropagation();
+                    setOpenMenuId((prev) =>
+                      prev === session.id ? null : session.id,
+                    );
+                  }}
+                  onCloseMenu={() => setOpenMenuId(null)}
+                  onRename={handleRenameSession(session)}
+                  onDelete={() => handleDeleteSession(session)}
+                  onClick={() => onOpenWorkspace(session.id)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* New script button */}
-      <div className="px-3 pt-2">
-        <button
-          data-testid="new-script-btn"
-          onClick={() => onOpenWorkspace(null)}
-          className="text-sm text-purple-600 underline"
-        >
-          + New Script
-        </button>
+      {/* ── Footer ── */}
+      <div className="flex items-center justify-center gap-2 py-3 bg-white border-t border-gray-100 flex-shrink-0">
+        <img src={shieldCheckIcon} alt="" className="w-3.5 h-3.5 opacity-40" />
+        <span className="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
+          All data is stored locally on this device.
+        </span>
       </div>
 
-      {/* Patient Info Card */}
-      <div className="p-3 border-t">
-        <PatientInfoCard
-          sharedPillValues={aggregatedPillValues}
-          onSave={(values) => updateSharedPillValues(patientId, values)}
-        />
-      </div>
-
-      {/* Confirm dialog */}
+      {/* ── Confirm dialog ── */}
       {confirmState && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div
             data-testid="confirm-dialog"
-            className="bg-white rounded-lg p-6 mx-4 max-w-sm w-full shadow-xl"
+            className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl"
           >
-            <p className="text-sm mb-6">{confirmState.message}</p>
+            <p className="text-sm text-gray-700 mb-6">{confirmState.message}</p>
             <div className="flex gap-3 justify-end">
               <button
                 data-testid="confirm-cancel"
                 onClick={() => setConfirmState(null)}
-                className="border rounded px-4 py-2 text-sm"
+                className="border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
               >
                 Cancel
               </button>
@@ -215,7 +258,7 @@ export function Folder({
                   confirmState.onConfirm();
                   setConfirmState(null);
                 }}
-                className="bg-red-600 text-white rounded px-4 py-2 text-sm"
+                className="bg-red-500 hover:bg-red-600 text-white rounded-lg px-4 py-2 text-sm font-semibold"
               >
                 Delete
               </button>
