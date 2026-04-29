@@ -144,6 +144,7 @@ export function Folder({
         {/* Header meatball — contains delete patient */}
         <div className="relative" onClick={(e) => e.stopPropagation()}>
           <button
+            data-testid="folder-header-menu"
             className="text-white/80 text-2xl leading-none p-1"
             onClick={() => setHeaderMenuOpen((prev) => !prev)}
             aria-label="Patient options"
