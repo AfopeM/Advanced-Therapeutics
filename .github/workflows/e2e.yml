@@ -1,0 +1,70 @@
+name: E2E Tests
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+jobs:
+  e2e:
+    name: Playwright E2E
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Get the code ────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Set up Node.js ─────────────────────────────────────────────────
+      # Matches the project's toolchain. Uses the npm cache so installs are fast.
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      # ── 3. Install project dependencies ───────────────────────────────────
+      # `npm ci` is the CI-safe version of `npm install`.
+      # It installs exactly what's in package-lock.json — no surprises.
+      - name: Install dependencies
+        run: npm ci
+
+      # ── 4. Install Playwright + Chromium browser ───────────────────────────
+      # Playwright manages its own browser binaries separately from npm.
+      # `--with-deps` also installs system libraries that Chrome needs on Linux.
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      # ── 5. Install xvfb (virtual display) ─────────────────────────────────
+      # xvfb = X Virtual Frame Buffer. Lets Chrome open a window on a headless
+      # Linux server. Required because Chrome extensions need headless: false.
+      - name: Install xvfb
+        run: sudo apt-get install -y xvfb
+
+      # ── 6. Build the extension ─────────────────────────────────────────────
+      # Playwright loads the extension from the /dist folder (see extension.ts).
+      # The build must happen before tests run or the extension won't exist.
+      - name: Build extension
+        run: npm run build
+
+      # ── 7. Run E2E tests ───────────────────────────────────────────────────
+      # xvfb-run starts a hidden virtual display, then runs playwright test
+      # inside it. Chrome sees a real display and loads the extension normally.
+      - name: Run Playwright tests
+        run: xvfb-run --auto-servernum npx playwright test
+        env:
+          CI: "true"
+
+      # ── 8. Upload test report on failure ──────────────────────────────────
+      # If any test fails, Playwright generates an HTML report + screenshots.
+      # This step uploads them to GitHub so you can download and inspect them.
+      # `if: failure()` means this step only runs when something went wrong.
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

@@ -17,7 +17,7 @@ async function openFirstFolder(page: Page) {
   await page.waitForSelector('[data-testid="folder-view"]');
 }
 
-test.describe("Phase 4 — Patient Folder", () => {
+test.describe("Patient Folder", () => {
   test("clicking a patient card navigates to their folder", async () => {
     const { context, extensionId } = await loadExtension();
     const page = await context.newPage();
@@ -469,6 +469,7 @@ test.describe("Phase 4 — Patient Folder", () => {
     });
 
     await openFirstFolder(page);
+    await page.getByTestId("folder-header-menu").click();
     await page.getByTestId("folder-delete-patient").click();
 
     await expect(page.getByTestId("confirm-dialog")).toBeVisible();
@@ -496,6 +497,7 @@ test.describe("Phase 4 — Patient Folder", () => {
     });
 
     await openFirstFolder(page);
+    await page.getByTestId("folder-header-menu").click();
     await page.getByTestId("folder-delete-patient").click();
     await page.getByTestId("confirm-ok").click();
 
