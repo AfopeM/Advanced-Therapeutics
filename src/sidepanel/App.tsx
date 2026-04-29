@@ -6,7 +6,7 @@ import { Settings } from "./features/settings/Settings";
 import { Hub } from "./features/hub/Hub";
 import { Folder } from "./features/folder/Folder";
 import { Workspace } from "./features/workspace/Workspace";
-import shieldCheckIcon from "../assets/icons/shield-check.svg";
+import shieldCheckIcon from "../assets/Icons/shield-check.svg";
 
 type View = "hub" | "folder" | "workspace";
 
