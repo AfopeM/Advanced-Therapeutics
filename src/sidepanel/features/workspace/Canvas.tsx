@@ -19,7 +19,7 @@ const FILLED_CHIP =
   "display:inline-block;border:1.5px dashed #16a34a;background:#f0fdf4;" +
   "color:#15803d;border-radius:5px;padding:0 5px;line-height:1.5;" +
   "font-family:inherit;font-size:inherit;font-weight:600;" +
-  "cursor:default;white-space:nowrap;user-select:none;vertical-align:baseline;";
+  "cursor:grab;white-space:nowrap;user-select:none;vertical-align:baseline;";
 
 // ---------------------------------------------------------------------------
 // Line classification (drives bold / underline headings)
@@ -54,7 +54,7 @@ function tokenSpan(key: string, value: string, label: string): string {
   const display = filled ? escHtml(value) : escHtml(label || key);
   const style = filled ? FILLED_CHIP : EMPTY_CHIP;
   return (
-    `<span data-token="${escHtml(key)}" contenteditable="false" style="${style}">` +
+    `<span data-token="${escHtml(key)}" contenteditable="false" draggable="true" style="${style}">` +
     `${display}</span>`
   );
 }
@@ -173,6 +173,7 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
   ref,
 ) {
   const divRef = useRef<HTMLDivElement>(null);
+  const draggedKeyRef = useRef<string | null>(null);
 
   // Expose imperative methods to Workspace
   useImperativeHandle(ref, () => ({
@@ -249,6 +250,112 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
     document.execCommand("insertText", false, text);
   }, []);
 
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      if (e.key !== "Backspace" && e.key !== "Delete") return;
+
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+
+      // Non-collapsed selection: block if it contains any token span
+      if (!sel.isCollapsed) {
+        const fragment = sel.getRangeAt(0).cloneContents();
+        if (fragment.querySelector("[data-token]")) e.preventDefault();
+        return;
+      }
+
+      // Collapsed cursor: check the node that would be swallowed
+      const range = sel.getRangeAt(0);
+      const { startContainer, startOffset } = range;
+
+      if (e.key === "Backspace" && startOffset === 0) {
+        const prev = startContainer.previousSibling;
+        if (prev && (prev as HTMLElement).dataset?.token) e.preventDefault();
+      } else if (e.key === "Delete") {
+        const atEnd =
+          startContainer.nodeType === Node.TEXT_NODE
+            ? startOffset === (startContainer as Text).length
+            : startOffset === startContainer.childNodes.length;
+        if (atEnd) {
+          const next = startContainer.nextSibling;
+          if (next && (next as HTMLElement).dataset?.token) e.preventDefault();
+        }
+      }
+    },
+    [],
+  );
+
+  // Add these four handlers
+  const handleDragStart = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    const tokenEl = (e.target as HTMLElement).closest(
+      "[data-token]",
+    ) as HTMLElement | null;
+    if (!tokenEl) return; // let normal text drag work unchanged
+    draggedKeyRef.current = tokenEl.dataset.token ?? null;
+    e.dataTransfer.effectAllowed = "move";
+    setTimeout(() => {
+      tokenEl.style.opacity = "0.3";
+    }, 0);
+  }, []);
+
+  const handleDragEnd = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    const tokenEl = (e.target as HTMLElement).closest(
+      "[data-token]",
+    ) as HTMLElement | null;
+    if (tokenEl) tokenEl.style.opacity = "";
+    draggedKeyRef.current = null;
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (draggedKeyRef.current) e.preventDefault(); // only allow drops of our own tokens
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      const key = draggedKeyRef.current;
+      if (!key || !divRef.current) {
+        draggedKeyRef.current = null;
+        return;
+      }
+
+      const src = divRef.current.querySelector<HTMLElement>(
+        `[data-token="${key}"]`,
+      );
+      if (!src) {
+        draggedKeyRef.current = null;
+        return;
+      }
+
+      // Get the caret position at the drop coordinates (Chrome-only, fine for extension)
+      const range = document.caretRangeFromPoint(e.clientX, e.clientY);
+      if (!range || src.contains(range.startContainer)) {
+        draggedKeyRef.current = null;
+        return;
+      }
+
+      const clone = src.cloneNode(true) as HTMLElement;
+      clone.style.opacity = ""; // reset the fade-out
+      range.insertNode(clone); // insert clone at drop position first...
+      src.remove(); // ...then remove original (avoids range invalidation)
+
+      onScriptChange(extractScript(divRef.current));
+
+      if (onCustomTokensPresent) {
+        const presentKeys = new Set<string>();
+        divRef.current
+          .querySelectorAll<HTMLElement>("[data-token]")
+          .forEach((el) => {
+            if (el.dataset.token) presentKeys.add(el.dataset.token);
+          });
+        onCustomTokensPresent(presentKeys);
+      }
+
+      draggedKeyRef.current = null;
+    },
+    [onScriptChange, onCustomTokensPresent],
+  );
+
   return (
     <div
       data-testid="canvas"
@@ -257,6 +364,11 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
       suppressContentEditableWarning
       onInput={handleInput}
       onPaste={handlePaste}
+      onKeyDown={handleKeyDown}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
       className="text-sm leading-relaxed p-4 bg-white border border-dashed rounded-lg h-full overflow-y-auto outline-none font-sans"
     />
   );

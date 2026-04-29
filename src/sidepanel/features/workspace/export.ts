@@ -18,7 +18,12 @@ function escapeRtf(text: string): string {
 const RTF_HEADER =
   "{\\rtf1\\ansi\\deff0" +
   "{\\fonttbl{\\f0 Arial;}}" +
-  "{\\colortbl ;\\red22\\green163\\blue74;\\red29\\green78\\blue216;}" +
+  "{\\colortbl ;" +
+  "\\red22\\green163\\blue74;" + // 1 = green text  (filled)
+  "\\red220\\green252\\blue231;" + // 2 = green bg highlight
+  "\\red146\\green64\\blue14;" + // 3 = amber text  (empty)
+  "\\red254\\green243\\blue199;" + // 4 = amber bg highlight
+  "}" +
   "\\f0\\fs24\\sl360\\slmult1 ";
 
 // ---------------------------------------------------------------------------
@@ -44,9 +49,14 @@ function nodeToRtf(node: Node): string {
   // Token chip spans — detect fill state via inline style colour hex
   if (tag === "SPAN" && el.dataset?.token) {
     const styleAttr = el.getAttribute("style") ?? "";
-    const isFilled = styleAttr.includes("16a34a"); // green = filled
-    const colorIdx = isFilled ? 1 : 2; // color table indices
-    return `{\\cf${colorIdx} ${inner}}`;
+    const isFilled = styleAttr.includes("16a34a"); // green border = filled
+    if (isFilled) {
+      // Bold + green text + light-green background
+      return `{\\b\\cf1\\highlight2 ${inner}}`;
+    } else {
+      // Bold + amber text + amber background
+      return `{\\b\\cf3\\highlight4 ${inner}}`;
+    }
   }
 
   // Bold

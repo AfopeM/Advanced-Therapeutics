@@ -34,7 +34,13 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
   // Existing session: restore saved pill values.
   // -------------------------------------------------------------------------
   const buildInitialPillValues = (): Record<string, string> => {
-    if (existingSession) return { ...existingSession.pillValues };
+    if (existingSession) {
+      // sharedPillValues = the latest cross-session state; session values override them
+      return {
+        ...(patient?.sharedPillValues ?? {}),
+        ...existingSession.pillValues,
+      };
+    }
 
     const shared: Record<string, string> = {
       ...(patient?.sharedPillValues ?? {}),
@@ -82,9 +88,10 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
   const renderKey = `${templateId}_${customPills.map((p) => p.key).join("_")}`;
 
   const [scriptText, setScriptText] = useState(
-    existingSession
-      ? getTemplate(existingSession.templateId).script_text
-      : template.script_text,
+    existingSession?.scriptText ??
+      (existingSession
+        ? getTemplate(existingSession.templateId).script_text
+        : template.script_text),
   );
 
   // When the template selector changes, reset the script to the new template text
@@ -98,20 +105,22 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
   const handleValueChange = (key: string, value: string) => {
     setPillValues((prev) => {
       const next = { ...prev, [key]: value };
-      // Auto-derive patient_first_name from patient_name in real time
       if (key === "patient_name") {
         next.patient_first_name = value.split(" ")[0] ?? "";
       }
       return next;
     });
 
-    // Two-way binding: keep the patient record's name in sync
     if (key === "patient_name" && patient && value.trim()) {
       renamePatient(patientId, value.trim());
+      // Sync both name variants to shared state so Patient Info stays current
+      updateSharedPillValues(patientId, {
+        patient_name: value,
+        patient_first_name: value.split(" ")[0] ?? "",
+      });
+    } else {
+      updateSharedPillValues(patientId, { [key]: value });
     }
-
-    // Sync to patient's shared pill values so other sessions can pick it up
-    updateSharedPillValues(patientId, { [key]: value });
   };
 
   // -------------------------------------------------------------------------
@@ -166,6 +175,7 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
         templateId,
         pillValues,
         customPills,
+        scriptText,
         savedAt: Date.now(),
       });
       setIsSaved(true);
@@ -173,6 +183,7 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
       await updateSession(workingSessionId.current, {
         pillValues,
         customPills,
+        scriptText,
         savedAt: Date.now(),
       });
     }
