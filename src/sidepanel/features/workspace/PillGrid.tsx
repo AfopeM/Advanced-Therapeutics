@@ -1,12 +1,32 @@
 import { useState } from "react";
 import type { TemplatePill } from "../../../defaults/templates";
+import profileIcon from "../../../assets/icons/profile.svg";
+import calendarIcon from "../../../assets/icons/calendar.svg";
+import boxIcon from "../../../assets/icons/box.svg";
+import bodyShapeIcon from "../../../assets/icons/body-shape.svg";
+import mailboxIcon from "../../../assets/icons/mailbox.svg";
+import documentIcon from "../../../assets/icons/document.svg";
+import crossIcon from "../../../assets/icons/cross.svg";
+
+// Maps pill keys to contextual icons
+const PILL_ICON_MAP: Record<string, string> = {
+  patient_first_name: profileIcon,
+  doctors_name: profileIcon,
+  ps_name: profileIcon,
+  body_part: bodyShapeIcon,
+  device: boxIcon,
+  delivered_date: calendarIcon,
+  sx_date: calendarIcon,
+  insurance_type: mailboxIcon,
+  address: mailboxIcon,
+};
+
+function getPillIcon(key: string): string {
+  return PILL_ICON_MAP[key] ?? documentIcon;
+}
 
 interface PillGridProps {
   pills: TemplatePill[];
-  /**
-   * Keys that were created by the user via "+ Add field".
-   * Only these pills show the × delete button.
-   */
   customPillKeys: Set<string>;
   pillValues: Record<string, string>;
   onValueChange: (key: string, value: string) => void;
@@ -28,7 +48,6 @@ export function PillGrid({
   const handleAdd = () => {
     const label = newLabel.trim();
     if (!label) return;
-    // "Patient Full Name" → "patient_full_name"
     const key = label.toLowerCase().replace(/\s+/g, "_");
     onAddPill({ key, label });
     setNewLabel("");
@@ -36,41 +55,63 @@ export function PillGrid({
   };
 
   return (
-    <div className="flex flex-col gap-3">
-      {pills.map((pill) => (
-        <div key={pill.key} className="flex flex-col gap-0.5">
-          <div className="flex items-center justify-between">
-            <label className="text-xs font-medium text-gray-600">
-              {pill.label}
-            </label>
+    <div className="flex flex-col gap-3 h-40">
+      {/* Pills — 2-col grid */}
+      {pills.length > 0 && (
+        <div className="grid grid-cols-3 gap-2 overflow-y-auto scrollbar-thin">
+          {pills.map((pill) => (
+            <div key={pill.key} className="flex flex-col gap-1">
+              {/* Label + delete button */}
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-bold tracking-wider text-gray-400 uppercase">
+                  {pill.label}
+                </label>
+                {customPillKeys.has(pill.key) && (
+                  <button
+                    data-testid={`delete-pill-${pill.key}`}
+                    onClick={() => onDeletePill(pill.key)}
+                    className="text-gray-300 hover:text-red-400 cursor-pointer group text-xs transition-colors leading-none"
+                    aria-label={`Remove ${pill.label}`}
+                  >
+                    <img
+                      src={crossIcon}
+                      alt=""
+                      className="w-4 h-4 group-hover:opacity-60 rotate-90"
+                    />
+                  </button>
+                )}
+              </div>
 
-            {/* Delete button only visible for custom (user-created) pills */}
-            {customPillKeys.has(pill.key) && (
-              <button
-                data-testid={`delete-pill-${pill.key}`}
-                onClick={() => onDeletePill(pill.key)}
-                className="text-xs text-gray-300 hover:text-red-400 transition-colors"
-                aria-label={`Remove ${pill.label}`}
-              >
-                ✕
-              </button>
-            )}
-          </div>
-
-          <input
-            data-testid={`pill-input-${pill.key}`}
-            type="text"
-            value={pillValues[pill.key] ?? ""}
-            onChange={(e) => onValueChange(pill.key, e.target.value)}
-            className="border border-dashed rounded px-2 py-1 text-sm focus:outline-none focus:border-purple-400"
-            placeholder={pill.label}
-          />
+              {/* Input with icon */}
+              <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-white">
+                <div className="pl-2.5 flex-shrink-0">
+                  <img
+                    src={getPillIcon(pill.key)}
+                    alt=""
+                    className="w-3.5 h-3.5"
+                    style={{
+                      filter:
+                        "invert(40%) sepia(60%) saturate(500%) hue-rotate(60deg)",
+                    }}
+                  />
+                </div>
+                <input
+                  data-testid={`pill-input-${pill.key}`}
+                  type="text"
+                  value={pillValues[pill.key] ?? ""}
+                  onChange={(e) => onValueChange(pill.key, e.target.value)}
+                  placeholder={pill.label}
+                  className="flex-1 py-2 px-2 text-sm bg-transparent focus:outline-none text-gray-800 placeholder:text-gray-300 min-w-0"
+                />
+              </div>
+            </div>
+          ))}
         </div>
-      ))}
+      )}
 
-      {/* "+ Add field" form */}
+      {/* Add Pill */}
       {isAdding ? (
-        <div className="flex gap-2 mt-1">
+        <div className="flex gap-2">
           <input
             data-testid="new-pill-label-input"
             type="text"
@@ -81,12 +122,12 @@ export function PillGrid({
               if (e.key === "Enter") handleAdd();
               if (e.key === "Escape") setIsAdding(false);
             }}
-            className="flex-1 border border-dashed rounded px-2 py-1 text-sm focus:outline-none focus:border-purple-400"
+            className="flex-1 border border-dashed border-brand/50 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/30 text-gray-800 placeholder:text-gray-300"
             autoFocus
           />
           <button
             onClick={handleAdd}
-            className="bg-purple-600 text-white rounded px-3 py-1 text-sm"
+            className="bg-brand cursor-pointer hover:bg-brand-alt text-white rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
           >
             Add
           </button>
@@ -95,9 +136,9 @@ export function PillGrid({
         <button
           data-testid="add-pill-btn"
           onClick={() => setIsAdding(true)}
-          className="text-xs text-purple-600 underline text-left mt-1"
+          className="w-full py-2.5 cursor-pointer border border-dashed border-gray-300 rounded-lg text-sm text-gray-400 hover:border-brand hover:text-brand font-medium transition-colors"
         >
-          + Add field
+          + Add Pill
         </button>
       )}
     </div>

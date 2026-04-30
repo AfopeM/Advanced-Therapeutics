@@ -127,7 +127,7 @@ export function Folder({
       className="flex flex-col h-screen bg-gray-100 font-sans"
     >
       {/* ── Green header ── */}
-      <div className="bg-brand-dark px-4 py-3 flex items-center gap-3 flex-shrink-0">
+      <div className="bg-dark px-4 py-3 flex items-center gap-3 flex-shrink-0">
         <button
           data-testid="folder-back"
           onClick={onBack}
@@ -158,7 +158,7 @@ export function Folder({
             <img
               src={meatballIcon}
               alt=""
-              className="w-3.5 h-3.5 opacity-90 group-hover:opacity-100 rotate-90 invert"
+              className="w-5 h-5 group-hover:opacity-80 rotate-90 invert"
             />
           </button>
           {headerMenuOpen && (

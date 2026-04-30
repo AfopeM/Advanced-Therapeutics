@@ -31,9 +31,28 @@
 
 @theme {
   --color-brand: #7a9e2e;
-  --color-brand-dark: #111827;
   --color-brand-alt: #6b8d28;
+  --color-dark: #111827;
 
   --font-sans: "Fira Sans Condensed", ui-sans-serif, system-ui;
   --font-serif: "Merriweather", ui-serif, Georgia;
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin; /* Firefox */
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 2px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgba(100, 100, 100, 0.5);
+    border-radius: 9999px;
+  }
 }

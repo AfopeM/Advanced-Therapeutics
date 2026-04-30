@@ -369,7 +369,7 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
       onDragEnd={handleDragEnd}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
-      className="text-sm leading-relaxed p-4 bg-white border border-dashed rounded-lg h-full overflow-y-auto outline-none font-sans"
+      className="text-[13px] font-serif leading-relaxed p-4 bg-white border border-dashed rounded-lg h-full overflow-y-auto outline-none font-sans scrollbar-thin"
     />
   );
 });

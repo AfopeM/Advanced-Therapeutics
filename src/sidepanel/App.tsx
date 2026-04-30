@@ -101,7 +101,7 @@ export function App() {
   return (
     <div className="flex flex-col h-screen bg-gray-50 font-sans">
       {/* ── Green branded header ── */}
-      <div className="bg-brand-dark px-4 py-3 flex items-center justify-between flex-shrink-0">
+      <div className="bg-dark px-4 py-3 flex items-center justify-between flex-shrink-0">
         <div>
           <p className="text-brand uppercase font-black text-2xl leading-none tracking-wider">
             Advanced
@@ -119,7 +119,7 @@ export function App() {
           <img
             src={menuIcon}
             alt=""
-            className="w-8 h-8 opacity-100 group-hover:opacity-40 transition-all flex-shrink-0 invert"
+            className="w-6 h-6 opacity-100 group-hover:opacity-40 transition-all flex-shrink-0 invert"
           />
         </button>
       </div>

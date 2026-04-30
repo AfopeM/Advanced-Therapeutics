@@ -33,7 +33,7 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
       className="flex flex-col h-screen bg-gray-100 font-sans"
     >
       {/* ── Dark header ── */}
-      <div className="bg-brand-dark px-4 py-3 flex items-center gap-3 flex-shrink-0">
+      <div className="bg-dark px-4 py-3 flex items-center gap-3 flex-shrink-0">
         <button
           data-testid="settings-back"
           onClick={onClose}

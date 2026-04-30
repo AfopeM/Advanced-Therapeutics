@@ -11,10 +11,17 @@ import { getUniqueSessionName, generateId } from "../../shared/utils";
 import { Canvas, type CanvasHandle } from "./Canvas";
 import { PillGrid } from "./PillGrid";
 import { downloadRtfFromHtml, buildRtfFilename } from "./export";
+import chevronDownIcon from "../../../assets/icons/chevron-down.svg";
+import downloadIcon from "../../../assets/icons/download.svg";
+import saveIcon from "../../../assets/icons/save.svg";
+import profileIcon from "../../../assets/icons/profile.svg";
+import documentIcon from "../../../assets/icons/document.svg";
+import arrowIcon from "../../../assets/icons/arrow.svg";
+import meatballIcon from "../../../assets/icons/meatball.svg";
+import Footer from "../../shared/components/Footer";
 
 interface WorkspaceProps {
   patientId: string;
-  /** null = new unsaved session; string = editing an existing session */
   sessionId: string | null;
   onBack: () => void;
 }
@@ -217,86 +224,177 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
   // Render
   // -------------------------------------------------------------------------
   return (
-    <div data-testid="workspace-view" className="flex flex-col h-screen">
-      {/* ── Header ── */}
-      <div className="flex items-center gap-3 p-3 border-b flex-shrink-0">
+    <div
+      data-testid="workspace-view"
+      className="flex flex-col h-screen bg-gray-100"
+    >
+      {/* ── Dark header ── */}
+      <div className="bg-gray-900 px-4 py-3 flex items-center gap-3 flex-shrink-0">
         <button
           data-testid="workspace-back"
           onClick={handleBack}
-          className="text-xl font-bold"
+          className="text-white cursor-pointer group text-2xl font-bold leading-none p-1 -ml-1"
           aria-label="Back to folder"
         >
-          ←
+          <img
+            src={arrowIcon}
+            alt=""
+            className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-all flex-shrink-0 invert"
+          />
         </button>
         <span
           data-testid="workspace-patient-name"
-          className="flex-1 text-sm font-semibold truncate"
+          className="flex-1 text-white font-bold text-lg truncate"
         >
           {patient?.name ?? "Unknown Patient"}
         </span>
         <button
-          data-testid="download-rtf-btn"
-          onClick={handleDownload}
-          className="text-xs text-purple-600 underline"
+          className="text-white/60 cursor-pointer group text-2xl leading-none p-1"
+          aria-label="More options"
         >
-          Export RTF
+          <img
+            src={meatballIcon}
+            alt=""
+            className="w-5 h-5 group-hover:opacity-80 rotate-90 invert"
+          />
         </button>
       </div>
 
-      {/* ── Template selector ── */}
-      <div className="px-3 py-2 border-b flex-shrink-0">
-        <select
-          data-testid="template-select"
-          value={templateId}
-          onChange={(e) => setTemplateId(e.target.value)}
-          disabled={isSaved}
-          className="w-full border rounded px-2 py-1.5 text-sm disabled:bg-gray-100 disabled:text-gray-400"
-        >
-          {TEMPLATES.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
-        </select>
+      {/* ── Scrollable body ── */}
+      <div className="flex-1 overflow-y-auto flex flex-col gap-3 p-3">
+        {/* ── Pills section ── */}
+        <div className="bg-white rounded-2xl shadow-sm p-4 flex flex-col gap-4">
+          {/* Row 1: Script Type (template) + Patient Full Name */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Script Type */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold tracking-wider text-gray-400 uppercase">
+                Script Type
+              </label>
+              <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+                <div className="pl-2.5 flex-shrink-0">
+                  <img
+                    src={documentIcon}
+                    alt=""
+                    className="w-3.5 h-3.5 opacity-40"
+                  />
+                </div>
+                <select
+                  data-testid="template-select"
+                  value={templateId}
+                  onChange={(e) => setTemplateId(e.target.value)}
+                  disabled={isSaved}
+                  className="flex-1 py-2 px-2 text-sm bg-transparent focus:outline-none appearance-none cursor-pointer text-gray-800 disabled:text-gray-400 min-w-0"
+                >
+                  {TEMPLATES.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="pr-2.5 flex-shrink-0">
+                  <img
+                    src={chevronDownIcon}
+                    alt=""
+                    className="w-3 h-3 opacity-40 pointer-events-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Patient Full Name */}
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-bold tracking-wider text-gray-400 uppercase">
+                Patient Full Name
+              </label>
+              <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
+                <div className="pl-2.5 flex-shrink-0">
+                  <img
+                    src={profileIcon}
+                    alt=""
+                    className="w-3.5 h-3.5"
+                    style={{
+                      filter:
+                        "invert(40%) sepia(60%) saturate(500%) hue-rotate(60deg)",
+                    }}
+                  />
+                </div>
+                <input
+                  data-testid="pill-input-patient_name"
+                  type="text"
+                  value={pillValues["patient_name"] ?? ""}
+                  onChange={(e) =>
+                    handleValueChange("patient_name", e.target.value)
+                  }
+                  placeholder="Full Name"
+                  className="flex-1 py-2 px-2 text-sm bg-transparent focus:outline-none text-gray-800 placeholder:text-gray-300 min-w-0"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Remaining pills + Add Pill button */}
+          <PillGrid
+            pills={allPills.filter((p) => p.key !== "patient_name")}
+            customPillKeys={customPillKeys}
+            pillValues={pillValues}
+            onValueChange={handleValueChange}
+            onAddPill={handleAddPill}
+            onDeletePill={handleDeletePill}
+          />
+        </div>
+
+        {/* ── Canvas section ── */}
+        <div className="bg-white rounded-2xl shadow-sm flex flex-col flex-1 min-h-72 overflow-hidden">
+          <div className="px-4 pt-3 pb-2 border-b border-gray-100 flex-shrink-0">
+            <p className="text-xs font-bold tracking-widest text-gray-400 uppercase">
+              Script
+            </p>
+          </div>
+          <div className="flex-1 overflow-hidden p-3">
+            <Canvas
+              ref={canvasRef}
+              scriptText={scriptText}
+              pillValues={pillValues}
+              userName={userName}
+              pillLabels={pillLabels}
+              renderKey={renderKey}
+              onScriptChange={setScriptText}
+              onCustomTokensPresent={handleCustomTokensPresent}
+            />
+          </div>
+        </div>
       </div>
 
-      {/* ── VERTICAL SPLIT: pill grid on top, canvas below ── */}
+      {/* ── Footer ── */}
+      <div className="flex-shrink-0 bg-white border-t border-gray-100 px-4 pt-3 pb-3">
+        <div className="flex gap-3 mb-2.5">
+          {/* Save Draft */}
+          <button
+            data-testid="save-session-btn"
+            onClick={saveSession}
+            className="flex-1 flex cursor-pointer items-center justify-center gap-2 border border-gray-200 rounded-xl py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            <img src={saveIcon} alt="" className="w-5 h-5 opacity-50" />
+            Save Draft
+          </button>
 
-      {/* Pill grid — scrollable, capped height so canvas always has room */}
-      <div className="border-b overflow-y-auto p-3 flex-shrink-0 max-h-60">
-        <PillGrid
-          pills={allPills}
-          customPillKeys={customPillKeys}
-          pillValues={pillValues}
-          onValueChange={handleValueChange}
-          onAddPill={handleAddPill}
-          onDeletePill={handleDeletePill}
-        />
-      </div>
+          {/* Download .rtf */}
+          <button
+            data-testid="download-rtf-btn"
+            onClick={handleDownload}
+            className="flex-1 flex cursor-pointer items-center justify-center gap-2 bg-brand hover:bg-brand-alt text-white rounded-xl py-3 text-sm font-semibold transition-colors"
+          >
+            <img
+              src={downloadIcon}
+              alt=""
+              className="w-4 h-4 brightness-0 invert"
+            />
+            Download .rtf
+          </button>
+        </div>
 
-      {/* Canvas — takes all remaining height */}
-      <div className="flex-1 overflow-hidden p-3">
-        <Canvas
-          ref={canvasRef}
-          scriptText={scriptText}
-          pillValues={pillValues}
-          userName={userName}
-          pillLabels={pillLabels}
-          renderKey={renderKey}
-          onScriptChange={setScriptText}
-          onCustomTokensPresent={handleCustomTokensPresent}
-        />
-      </div>
-
-      {/* ── Footer: Save button ── */}
-      <div className="p-3 border-t flex justify-end flex-shrink-0">
-        <button
-          data-testid="save-session-btn"
-          onClick={saveSession}
-          className="bg-purple-600 text-white rounded px-4 py-2 text-sm"
-        >
-          Save
-        </button>
+        <Footer />
       </div>
     </div>
   );

@@ -78,17 +78,7 @@ export function PatientInfoCard({
       className="bg-white rounded-2xl shadow-sm overflow-hidden"
     >
       {/* ── Card header ── */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
-        <div className="w-9 h-9 rounded-full bg-[#EEF6DC] flex items-center justify-center flex-shrink-0">
-          {/* <img
-            src={profileIcon}
-            alt=""
-            className="w-5 h-5"
-            style={{
-              filter: "invert(40%) sepia(60%) saturate(500%) hue-rotate(60deg)",
-            }}
-          /> */}
-        </div>
+      <div className="flex items-center gap-3 px-4 py-3">
         <span className="flex-1 uppercase text-sm font-semibold text-gray-800">
           Patient Information
         </span>
@@ -127,9 +117,9 @@ export function PatientInfoCard({
           No info recorded yet. Fill a script to see it here.
         </p>
       ) : (
-        <div className="flex divide-x divide-gray-100">
+        <div className="flex">
           {/* Left column */}
-          <div className="flex-1 divide-y divide-gray-100">
+          <div className="flex-1">
             {leftKeys.map((key) => (
               <div key={key} className="flex items-start gap-2.5 px-3 py-3">
                 <img

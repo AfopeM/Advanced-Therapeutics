@@ -115,7 +115,7 @@ export function SessionCard({
           <img
             src={meatballIcon}
             alt=""
-            className="w-3.5 h-3.5 group-hover:opacity-90 rotate-90 invert"
+            className="w-4 h-4 group-hover:opacity-80 rotate-90"
           />
         </button>
 

@@ -156,7 +156,7 @@ export function PatientCard({
           <img
             src={meatballIcon}
             alt=""
-            className="w-3.5 h-3.5 opacity-90 group-hover:opacity-100 rotate-90"
+            className="w-4 h-4 group-hover:opacity-90 rotate-90"
           />
         </button>
 
