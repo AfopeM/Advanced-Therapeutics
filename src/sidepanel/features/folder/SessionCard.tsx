@@ -3,6 +3,7 @@ import type { Session } from "../../shared/schemas/session.schema";
 import { getTemplate } from "../../../defaults/templates";
 import { formatScriptDate } from "../../shared/utils";
 import documentIcon from "../../../assets/icons/document.svg";
+import meatballIcon from "../../../assets/icons/meatball.svg";
 
 interface SessionCardProps {
   session: Session;
@@ -107,11 +108,15 @@ export function SessionCard({
       >
         <button
           data-testid="session-meatball"
-          className="p-1 rounded-full hover:bg-gray-100 text-gray-400 text-lg leading-none transition-colors"
+          className="p-1 rounded-lg cursor-pointer group hover:bg-gray-100 text-lg leading-none transition-colors"
           onClick={onMeatballClick}
           aria-label="Script options"
         >
-          ⋮
+          <img
+            src={meatballIcon}
+            alt=""
+            className="w-3.5 h-3.5 group-hover:opacity-90 rotate-90 invert"
+          />
         </button>
 
         {isMenuOpen && (
@@ -121,7 +126,7 @@ export function SessionCard({
           >
             <button
               data-testid="session-menu-rename"
-              className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+              className="w-full cursor-pointer text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
               onClick={() => {
                 onCloseMenu();
                 startRename();
@@ -131,7 +136,7 @@ export function SessionCard({
             </button>
             <button
               data-testid="session-menu-delete"
-              className="w-full text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50"
+              className="w-full cursor-pointer text-left px-4 py-2.5 text-sm text-red-500 hover:bg-red-50"
               onClick={() => {
                 onCloseMenu();
                 onDelete();

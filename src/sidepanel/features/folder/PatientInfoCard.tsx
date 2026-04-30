@@ -80,23 +80,23 @@ export function PatientInfoCard({
       {/* ── Card header ── */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
         <div className="w-9 h-9 rounded-full bg-[#EEF6DC] flex items-center justify-center flex-shrink-0">
-          <img
+          {/* <img
             src={profileIcon}
             alt=""
             className="w-5 h-5"
             style={{
               filter: "invert(40%) sepia(60%) saturate(500%) hue-rotate(60deg)",
             }}
-          />
+          /> */}
         </div>
-        <span className="flex-1 text-sm font-semibold text-gray-800">
+        <span className="flex-1 uppercase text-sm font-semibold text-gray-800">
           Patient Information
         </span>
         {!isEditing ? (
           <button
             data-testid="info-card-edit"
             onClick={() => setIsEditing(true)}
-            className="flex items-center gap-1.5 border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+            className="flex items-center cursor-pointer gap-1.5 border border-gray-200 rounded-lg px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors"
           >
             <img src={penIcon} alt="" className="w-3.5 h-3.5 opacity-50" />
             Edit
@@ -104,18 +104,18 @@ export function PatientInfoCard({
         ) : (
           <div className="flex gap-2">
             <button
-              data-testid="info-card-cancel"
-              onClick={() => setIsEditing(false)}
-              className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
               data-testid="info-card-save"
               onClick={handleSave}
-              className="bg-[#7A9E2E] text-white rounded-lg px-3 py-1.5 text-xs font-semibold hover:bg-[#6B8D28]"
+              className="cursor-pointer bg-brand text-white rounded-lg px-3 py-1.5 text-xs font-semibold hover:bg-brand-alt"
             >
               Save
+            </button>
+            <button
+              data-testid="info-card-cancel"
+              onClick={() => setIsEditing(false)}
+              className="cursor-pointer border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-50"
+            >
+              Cancel
             </button>
           </div>
         )}

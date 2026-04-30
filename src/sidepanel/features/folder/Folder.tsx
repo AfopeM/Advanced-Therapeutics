@@ -6,7 +6,9 @@ import { PatientInfoCard } from "./PatientInfoCard";
 import { getUniqueSessionName } from "../../shared/utils";
 import type { Session } from "../../shared/schemas/session.schema";
 import plusIcon from "../../../assets/icons/plus.svg";
-import shieldCheckIcon from "../../../assets/icons/shield-check.svg";
+import Footer from "../../shared/components/Footer";
+import arrowIcon from "../../../assets/icons/arrow.svg";
+import meatballIcon from "../../../assets/icons/meatball.svg";
 
 interface FolderProps {
   patientId: string;
@@ -122,17 +124,21 @@ export function Folder({
   return (
     <div
       data-testid="folder-view"
-      className="flex flex-col h-screen bg-gray-100"
+      className="flex flex-col h-screen bg-gray-100 font-sans"
     >
       {/* ── Green header ── */}
-      <div className="bg-[#7A9E2E] px-4 py-3 flex items-center gap-3 flex-shrink-0">
+      <div className="bg-brand-dark px-4 py-3 flex items-center gap-3 flex-shrink-0">
         <button
           data-testid="folder-back"
           onClick={onBack}
-          className="text-white text-2xl font-bold leading-none p-1 -ml-1"
+          className="text-white text-2xl cursor-pointer group font-bold leading-none p-1 -ml-1"
           aria-label="Back to Hub"
         >
-          ‹
+          <img
+            src={arrowIcon}
+            alt=""
+            className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-all flex-shrink-0 invert"
+          />
         </button>
         <h1
           data-testid="folder-patient-name"
@@ -145,11 +151,15 @@ export function Folder({
         <div className="relative" onClick={(e) => e.stopPropagation()}>
           <button
             data-testid="folder-header-menu"
-            className="text-white/80 text-2xl leading-none p-1"
+            className="text-white/80 text-2xl group leading-none cursor-pointer groupp-1"
             onClick={() => setHeaderMenuOpen((prev) => !prev)}
             aria-label="Patient options"
           >
-            ⋮
+            <img
+              src={meatballIcon}
+              alt=""
+              className="w-3.5 h-3.5 opacity-90 group-hover:opacity-100 rotate-90 invert"
+            />
           </button>
           {headerMenuOpen && (
             <div className="absolute right-0 top-full mt-1 w-44 bg-white border border-gray-100 rounded-xl shadow-lg z-20 overflow-hidden">
@@ -159,7 +169,7 @@ export function Folder({
                   setHeaderMenuOpen(false);
                   handleDeletePatient();
                 }}
-                className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-red-50 font-medium"
+                className="w-full text-left cursor-pointer px-4 py-3 text-sm text-red-500 hover:bg-red-50 font-medium"
               >
                 Delete Patient
               </button>
@@ -183,7 +193,7 @@ export function Folder({
           <button
             data-testid="new-script-btn"
             onClick={() => onOpenWorkspace(null)}
-            className="w-full bg-[#7A9E2E] hover:bg-[#6B8D28] active:bg-[#5F7D25] text-white font-semibold rounded-xl py-3.5 flex items-center justify-center gap-2.5 shadow-sm transition-colors"
+            className="w-full bg-brand cursor-pointer hover:bg-brand/90 active:bg-brand/70 text-white font-semibold rounded-xl py-3.5 flex items-center justify-center gap-2.5 shadow-sm transition-colors"
           >
             <img
               src={plusIcon}
@@ -230,12 +240,7 @@ export function Folder({
       </div>
 
       {/* ── Footer ── */}
-      <div className="flex items-center justify-center gap-2 py-3 bg-white border-t border-gray-100 flex-shrink-0">
-        <img src={shieldCheckIcon} alt="" className="w-3.5 h-3.5 opacity-40" />
-        <span className="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
-          All data is stored locally on this device.
-        </span>
-      </div>
+      <Footer />
 
       {/* ── Confirm dialog ── */}
       {confirmState && (
@@ -249,7 +254,7 @@ export function Folder({
               <button
                 data-testid="confirm-cancel"
                 onClick={() => setConfirmState(null)}
-                className="border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
+                className="border cursor-pointer border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
               >
                 Cancel
               </button>
@@ -259,7 +264,7 @@ export function Folder({
                   confirmState.onConfirm();
                   setConfirmState(null);
                 }}
-                className="bg-red-500 hover:bg-red-600 text-white rounded-lg px-4 py-2 text-sm font-semibold"
+                className="bg-red-500 cursor-pointer hover:bg-red-600 text-white rounded-lg px-4 py-2 text-sm font-semibold"
               >
                 Delete
               </button>

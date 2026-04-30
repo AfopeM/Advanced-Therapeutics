@@ -32,7 +32,7 @@
 @theme {
   --color-brand: #7a9e2e;
   --color-brand-dark: #111827;
-  /* --color-brand-dark: #6b8d28; */
+  --color-brand-alt: #6b8d28;
 
   --font-sans: "Fira Sans Condensed", ui-sans-serif, system-ui;
   --font-serif: "Merriweather", ui-serif, Georgia;
