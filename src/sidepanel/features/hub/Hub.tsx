@@ -200,7 +200,7 @@ export function Hub({ userName, onOpenSettings, onPatientClick }: HubProps) {
               <button
                 data-testid="new-patient-submit"
                 onClick={submitNewPatient}
-                className="flex-1 bg-[#7A9E2E] hover:bg-[#6B8D28] text-white rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
+                className="flex-1 bg-brand cursor-pointer hover:bg-brand/90 text-white rounded-lg px-4 py-2 text-sm font-bold transition-colors"
               >
                 Add Patient
               </button>
@@ -209,7 +209,7 @@ export function Hub({ userName, onOpenSettings, onPatientClick }: HubProps) {
                   setIsAddingPatient(false);
                   setNewPatientError(null);
                 }}
-                className="border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
+                className="border cursor-pointer border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-500 hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>
@@ -219,7 +219,7 @@ export function Hub({ userName, onOpenSettings, onPatientClick }: HubProps) {
           <button
             data-testid="new-patient-btn"
             onClick={handleNewPatientClick}
-            className="w-full bg-[#7A9E2E] hover:bg-[#6B8D28] active:bg-[#5F7D25] cursor-pointer text-white font-semibold rounded-xl py-3 flex items-center justify-center gap-2.5 shadow-sm transition-colors"
+            className="w-full bg-brand hover:bg-brand/90 active:bg-brand/50 cursor-pointer text-white font-bold rounded-xl py-3 flex items-center justify-center gap-2 shadow-sm transition-colors"
           >
             <img
               src={plusIcon}
@@ -241,7 +241,7 @@ export function Hub({ userName, onOpenSettings, onPatientClick }: HubProps) {
             {allPatients.length === 0 ? (
               <>
                 {/* Folder illustration */}
-                <div className="w-28 h-28 rounded-full bg-[#EEF6DC] flex items-center justify-center mb-5">
+                <div className="w-36 h-36 rounded-full bg-[#EEF6DC] flex items-center justify-center mb-5">
                   <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
                     {/* Folder body */}
                     <rect

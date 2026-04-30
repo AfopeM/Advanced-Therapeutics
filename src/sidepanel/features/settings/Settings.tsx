@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { useUserStore } from "../../shared/store/useUserStore";
 import profileIcon from "../../../assets/icons/profile.svg";
-import saveIcon from "../../../assets/icons/save.svg";
 import downloadIcon from "../../../assets/icons/download.svg";
 import trashIcon from "../../../assets/icons/trash.svg";
 import infoIcon from "../../../assets/icons/info.svg";
-import shieldCheckIcon from "../../../assets/icons/shield-check.svg";
+import Footer from "../../shared/components/Footer";
+import arrowIcon from "../../../assets/icons/arrow.svg";
 
 interface SettingsProps {
   onClose: () => void;
@@ -30,27 +30,25 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
   return (
     <div
       data-testid="settings-overlay"
-      className="flex flex-col h-screen bg-gray-100"
+      className="flex flex-col h-screen bg-gray-100 font-sans"
     >
-      {/* ── Green header ── */}
-      <div className="bg-[#7A9E2E] px-4 py-3 flex items-center gap-3 flex-shrink-0">
+      {/* ── Dark header ── */}
+      <div className="bg-brand-dark px-4 py-3 flex items-center gap-3 flex-shrink-0">
         <button
           data-testid="settings-back"
           onClick={onClose}
-          className="text-white text-xl font-bold leading-none p-1 -ml-1"
+          className="text-white cursor-pointer text-xl group font-bold leading-none p-1 -ml-1"
           aria-label="Back"
         >
-          ‹
+          <img
+            src={arrowIcon}
+            alt=""
+            className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-all flex-shrink-0 invert"
+          />
         </button>
         <h1 className="flex-1 text-white font-bold text-lg tracking-wide">
           Settings
         </h1>
-        <button
-          className="text-white/80 text-xl leading-none p-1"
-          aria-label="More options"
-        >
-          ⋮
-        </button>
       </div>
 
       {/* ── Scrollable body ── */}
@@ -69,7 +67,7 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
 
         {/* ── YOUR NAME section ── */}
         <div>
-          <p className="text-[11px] font-bold tracking-widest text-gray-400 uppercase mb-2 px-1">
+          <p className="text-xs font-bold tracking-widest text-gray-400 uppercase mb-2 px-1">
             Your Name
           </p>
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -77,7 +75,7 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
               <img
                 src={profileIcon}
                 alt=""
-                className="w-5 h-5 opacity-40 flex-shrink-0"
+                className="w-5 h-5 opacity-40 flex-shrink-0 font-white"
               />
               <input
                 data-testid="name-input"
@@ -95,9 +93,8 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
         <button
           data-testid="save-name"
           onClick={handleSave}
-          className="w-full bg-[#7A9E2E] hover:bg-[#6B8D28] text-white font-semibold rounded-xl py-3.5 flex items-center justify-center gap-2.5 shadow-sm transition-colors"
+          className="w-full bg-brand hover:bg-brand/90 cursor-pointer text-white font-bold rounded-xl py-4 flex items-center justify-center text-sm gap-2 shadow-sm transition-colors"
         >
-          <img src={saveIcon} alt="" className="w-5 h-5 brightness-0 invert" />
           Save
         </button>
 
@@ -187,12 +184,7 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
       </div>
 
       {/* ── Footer ── */}
-      <div className="flex items-center justify-center gap-2 py-3 bg-white border-t border-gray-100 flex-shrink-0">
-        <img src={shieldCheckIcon} alt="" className="w-3.5 h-3.5 opacity-40" />
-        <span className="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
-          All data is stored locally on this device.
-        </span>
-      </div>
+      <Footer />
     </div>
   );
 }

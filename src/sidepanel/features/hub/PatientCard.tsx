@@ -1,24 +1,20 @@
 import { useState, useRef } from "react";
 import type { Patient } from "../../shared/schemas/patient.schema";
 import { formatRelativeDate } from "../../shared/utils";
+import meatballIcon from "../../../assets/icons/meatball.svg";
 
-const AVATAR_COLORS = [
-  "bg-purple-500",
-  "bg-blue-500",
-  "bg-green-500",
-  "bg-amber-500",
-  "bg-rose-500",
-  "bg-cyan-500",
-  "bg-orange-500",
-  "bg-indigo-500",
-];
-
-function getAvatarColor(id: string): string {
+function getAvatarColor(id: string) {
   let hash = 0;
   for (const char of id) {
-    hash = (hash * 31 + char.charCodeAt(0)) % AVATAR_COLORS.length;
+    hash = char.charCodeAt(0) + ((hash << 5) - hash);
   }
-  return AVATAR_COLORS[Math.abs(hash)];
+
+  const hue = hash % 360;
+
+  return {
+    bg: `hsl(${hue}, 70%, 90%)`,
+    text: `hsl(${hue}, 70%, 35%)`,
+  };
 }
 
 interface PatientCardProps {
@@ -79,6 +75,8 @@ export function PatientCard({
     }
   };
 
+  const color = getAvatarColor(patient.id);
+
   return (
     <div
       data-testid="patient-card"
@@ -87,7 +85,8 @@ export function PatientCard({
     >
       {/* Avatar */}
       <div
-        className={`w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0 ${getAvatarColor(patient.id)}`}
+        style={{ backgroundColor: color.bg, color: color.text }}
+        className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0`}
       >
         {patient.name
           .split(" ")
@@ -150,11 +149,15 @@ export function PatientCard({
       >
         <button
           data-testid="patient-meatball"
-          className="p-1 rounded-full cursor-pointer hover:bg-gray-100 text-gray-400 text-lg leading-none transition-colors"
+          className="p-1 rounded-md cursor-pointer group hover:bg-gray-100 text-gray-400 text-lg leading-none transition-colors"
           onClick={onMeatballClick}
           aria-label="Patient options"
         >
-          ⋮
+          <img
+            src={meatballIcon}
+            alt=""
+            className="w-3.5 h-3.5 opacity-90 group-hover:opacity-100 rotate-90"
+          />
         </button>
 
         {isMenuOpen && (

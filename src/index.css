@@ -1,1 +1,39 @@
+@font-face {
+  font-family: "Merriweather";
+  src: url("/src/assets/fonts/merriweather-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Merriweather";
+  src: url("/src/assets/fonts/merriweather-bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Fira Sans Condensed";
+  src: url("/src/assets/fonts/fira-sans-condensed-regular.woff2")
+    format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Fira Sans Condensed";
+  src: url("/src/assets/fonts/fira-sans-condensed-bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+
 @import "tailwindcss";
+
+@theme {
+  --color-brand: #7a9e2e;
+  --color-brand-dark: #111827;
+  /* --color-brand-dark: #6b8d28; */
+
+  --font-sans: "Fira Sans Condensed", ui-sans-serif, system-ui;
+  --font-serif: "Merriweather", ui-serif, Georgia;
+}
