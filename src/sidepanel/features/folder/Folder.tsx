@@ -193,7 +193,7 @@ export function Folder({
           <button
             data-testid="new-script-btn"
             onClick={() => onOpenWorkspace(null)}
-            className="w-full bg-brand cursor-pointer hover:bg-brand/90 active:bg-brand/70 text-white font-semibold rounded-xl py-3.5 flex items-center justify-center gap-2.5 shadow-sm transition-colors"
+            className="w-full bg-brand cursor-pointer group text-sm hover:bg-brand/90 active:bg-brand/70 text-white font-medium rounded-xl py-3 flex items-center justify-center gap-2 shadow-sm transition-colors"
           >
             <img
               src={plusIcon}

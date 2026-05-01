@@ -39,6 +39,17 @@ const PILL_LABEL_MAP: Record<string, string> = {
   address: "Address",
 };
 
+const FIELD_ORDER = [
+  "patient_name",
+  "doctors_name",
+  "body_part",
+  "device",
+  "address",
+  "insurance_type",
+  "sx_date",
+  "ps_name",
+];
+
 function getPillIcon(key: string): string {
   return PILL_ICON_MAP[key] ?? documentIcon;
 }
@@ -57,7 +68,20 @@ export function PatientInfoCard({
   const [isEditing, setIsEditing] = useState(false);
   const [draftValues, setDraftValues] = useState<Record<string, string>>({});
 
-  const pillKeys = Object.keys(sharedPillValues);
+  const pillKeys = Object.keys(sharedPillValues)
+    .filter((k) => k !== "patient_first_name")
+    .sort((a, b) => {
+      const ai = FIELD_ORDER.indexOf(a);
+      const bi = FIELD_ORDER.indexOf(b);
+      // Both known → sort by canonical position
+      if (ai !== -1 && bi !== -1) return ai - bi;
+      // Only a is known → a comes first
+      if (ai !== -1) return -1;
+      // Only b is known → b comes first
+      if (bi !== -1) return 1;
+      // Both custom → preserve insertion order (chronological)
+      return 0;
+    });
 
   useEffect(() => {
     if (isEditing) setDraftValues({ ...sharedPillValues });
@@ -67,10 +91,6 @@ export function PatientInfoCard({
     onSave(draftValues);
     setIsEditing(false);
   };
-
-  // Split keys into two columns
-  const leftKeys = pillKeys.filter((_, i) => i % 2 === 0);
-  const rightKeys = pillKeys.filter((_, i) => i % 2 !== 0);
 
   return (
     <div
@@ -117,98 +137,60 @@ export function PatientInfoCard({
           No info recorded yet. Fill a script to see it here.
         </p>
       ) : (
-        <div className="flex">
-          {/* Left column */}
-          <div className="flex-1">
-            {leftKeys.map((key) => (
-              <div key={key} className="flex items-start gap-2.5 px-3 py-3">
-                <img
-                  src={getPillIcon(key)}
-                  alt=""
-                  className="w-4 h-4 mt-0.5 flex-shrink-0"
-                  style={{
-                    filter:
-                      "invert(40%) sepia(60%) saturate(500%) hue-rotate(60deg)",
-                  }}
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-bold tracking-wider text-gray-400 uppercase mb-0.5">
-                    {getPillLabel(key)}
-                  </p>
-                  {isEditing ? (
-                    <input
-                      data-testid={`info-pill-input-${key}`}
-                      className="w-full border border-gray-200 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-[#7A9E2E]/30"
-                      value={draftValues[key] ?? ""}
-                      onChange={(e) =>
-                        setDraftValues((prev) => ({
-                          ...prev,
-                          [key]: e.target.value,
-                        }))
-                      }
-                    />
-                  ) : (
-                    <dd
-                      data-testid={`info-pill-value-${key}`}
-                      className="text-sm font-medium text-gray-800 truncate"
-                    >
-                      {sharedPillValues[key] || (
-                        <span className="text-gray-300 italic font-normal text-xs">
-                          e.g. {getPillLabel(key)}
-                        </span>
-                      )}
-                    </dd>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 overflow-y-auto scrollbar-thin px-3 pb-3">
+          {pillKeys.map((key) => (
+            <div key={key} className="flex flex-col gap-1 px-2 py-1">
+              {/* Label */}
+              <label className="text-[10px] font-bold tracking-wider text-gray-400 uppercase">
+                {getPillLabel(key)}
+              </label>
 
-          {/* Right column */}
-          <div className="flex-1 divide-y divide-gray-100">
-            {rightKeys.map((key) => (
-              <div key={key} className="flex items-start gap-2.5 px-3 py-3">
-                <img
-                  src={getPillIcon(key)}
-                  alt=""
-                  className="w-4 h-4 mt-0.5 flex-shrink-0"
-                  style={{
-                    filter:
-                      "invert(40%) sepia(60%) saturate(500%) hue-rotate(60deg)",
-                  }}
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-bold tracking-wider text-gray-400 uppercase mb-0.5">
-                    {getPillLabel(key)}
-                  </p>
-                  {isEditing ? (
-                    <input
-                      data-testid={`info-pill-input-${key}`}
-                      className="w-full border border-gray-200 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-[#7A9E2E]/30"
-                      value={draftValues[key] ?? ""}
-                      onChange={(e) =>
-                        setDraftValues((prev) => ({
-                          ...prev,
-                          [key]: e.target.value,
-                        }))
-                      }
-                    />
-                  ) : (
-                    <dd
-                      data-testid={`info-pill-value-${key}`}
-                      className="text-sm font-medium text-gray-800 truncate"
-                    >
-                      {sharedPillValues[key] || (
-                        <span className="text-gray-300 italic font-normal text-xs">
-                          e.g. {getPillLabel(key)}
-                        </span>
-                      )}
-                    </dd>
-                  )}
+              {/* Input / Display */}
+              <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-white">
+                {/* Icon */}
+                <div className="pl-2.5 flex-shrink-0">
+                  <img
+                    src={getPillIcon(key)}
+                    alt=""
+                    className="w-3.5 h-3.5"
+                    style={{
+                      filter:
+                        "invert(40%) sepia(60%) saturate(500%) hue-rotate(60deg)",
+                    }}
+                  />
                 </div>
+
+                {isEditing ? (
+                  <input
+                    data-testid={`info-pill-input-${key}`}
+                    type="text"
+                    value={draftValues[key] ?? ""}
+                    onChange={(e) =>
+                      setDraftValues((prev) => ({
+                        ...prev,
+                        [key]: e.target.value,
+                      }))
+                    }
+                    placeholder={getPillLabel(key)}
+                    className="flex-1 py-2 px-2 text-sm bg-transparent focus:outline-none text-gray-800 placeholder:text-gray-300 min-w-0"
+                  />
+                ) : (
+                  <div
+                    data-testid={`info-pill-value-${key}`}
+                    className="flex-1 py-2 px-2 text-sm text-gray-800 truncate min-w-0"
+                  >
+                    {sharedPillValues[key] ? (
+                      sharedPillValues[key]
+                    ) : (
+                      <span className="text-gray-300 italic text-xs">
+                        {getPillLabel(key)}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

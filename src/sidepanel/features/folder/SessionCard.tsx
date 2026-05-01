@@ -30,6 +30,10 @@ export function SessionCard({
 
   const template = getTemplate(session.templateId);
 
+  // Use createdAt if it exists, fall back to savedAt for older records
+  const createdAt = (session as any).createdAt ?? session.savedAt;
+  const updatedAt = session.savedAt;
+
   const startRename = () => {
     setRenameValue(session.name);
     setIsRenaming(true);
@@ -38,9 +42,7 @@ export function SessionCard({
 
   const submitRename = () => {
     const trimmed = renameValue.trim();
-    if (trimmed && trimmed !== session.name) {
-      onRename(trimmed);
-    }
+    if (trimmed && trimmed !== session.name) onRename(trimmed);
     setIsRenaming(false);
   };
 
@@ -67,7 +69,7 @@ export function SessionCard({
         />
       </div>
 
-      {/* Main content */}
+      {/* Main content — name + template badge beneath */}
       <div
         className="flex-1 min-w-0"
         onClick={(e) => isRenaming && e.stopPropagation()}
@@ -87,19 +89,28 @@ export function SessionCard({
             {session.name}
           </p>
         )}
-        <p className="text-xs text-gray-400 mt-0.5">
-          {formatScriptDate(session.savedAt)}
-        </p>
+
+        {/* Template badge — now sits beneath the name */}
+        <span
+          data-testid="template-badge"
+          data-template-id={session.templateId}
+          className={`inline-flex mt-1 text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider border ${template.badgeClass}`}
+        >
+          {template.name}
+        </span>
       </div>
 
-      {/* Template badge */}
-      <span
-        data-testid="template-badge"
-        data-template-id={session.templateId}
-        className={`flex-shrink-0 text-[10px] px-2.5 py-1 rounded-md font-bold uppercase tracking-wider border ${template.badgeClass}`}
-      >
-        {template.name}
-      </span>
+      {/* Date stamps — stacked, in the old badge position */}
+      <div className="flex-shrink-0 text-right flex flex-col gap-0.5 min-w-[110px]">
+        <p className="text-[10px] text-gray-400">
+          <span className="font-semibold text-gray-500">Created </span>
+          {formatScriptDate(createdAt)}
+        </p>
+        <p className="text-[10px] text-gray-400">
+          <span className="font-semibold text-gray-500">Updated </span>
+          {formatScriptDate(updatedAt)}
+        </p>
+      </div>
 
       {/* Meatball menu */}
       <div
