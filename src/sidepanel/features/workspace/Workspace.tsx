@@ -14,10 +14,8 @@ import { downloadRtfFromHtml, buildRtfFilename } from "./export";
 import chevronDownIcon from "../../../assets/icons/chevron-down.svg";
 import downloadIcon from "../../../assets/icons/download.svg";
 import saveIcon from "../../../assets/icons/save.svg";
-import profileIcon from "../../../assets/icons/profile.svg";
 import documentIcon from "../../../assets/icons/document.svg";
 import arrowIcon from "../../../assets/icons/arrow.svg";
-import meatballIcon from "../../../assets/icons/meatball.svg";
 import Footer from "../../shared/components/Footer";
 
 interface WorkspaceProps {
@@ -31,6 +29,7 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
   const { sessions, addSession, updateSession, getSessionsByPatient } =
     useSessionStore();
   const { name: userName } = useUserStore();
+  const [templateOpen, setTemplateOpen] = useState(false);
 
   const patient = patients[patientId];
   const existingSession = sessionId ? sessions[sessionId] : null;
@@ -41,22 +40,28 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
   // Existing session: restore saved pill values.
   // -------------------------------------------------------------------------
   const buildInitialPillValues = (): Record<string, string> => {
+    // These keys are "patient-level" — Patient Info card is their source of truth.
+    // Session values for these should NEVER override a newer Patient Info edit.
+    const patientLevelKeys = new Set(["patient_name", "patient_first_name"]);
+
     if (existingSession) {
-      // sharedPillValues = the latest cross-session state; session values override them
-      return {
-        ...(patient?.sharedPillValues ?? {}),
+      const merged = {
         ...existingSession.pillValues,
+        ...(patient?.sharedPillValues ?? {}),
       };
+      // Re-apply patient-level shared values on top so Patient Info always wins
+      patientLevelKeys.forEach((key) => {
+        const sharedVal = patient?.sharedPillValues?.[key];
+        if (sharedVal) merged[key] = sharedVal;
+      });
+      return merged;
     }
 
     const shared: Record<string, string> = {
       ...(patient?.sharedPillValues ?? {}),
     };
-
-    // Always seed patient_name from the patient record
     if (patient) {
       shared.patient_name = patient.name;
-      // patient_first_name = first word of full name
       if (!shared.patient_first_name) {
         shared.patient_first_name = patient.name.split(" ")[0] ?? "";
       }
@@ -77,9 +82,13 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
 
   const workingSessionId = useRef<string>(sessionId ?? generateId());
   const canvasRef = useRef<CanvasHandle>(null);
+  const templateDropdownRef = useRef<HTMLDivElement>(null);
 
   const template = getTemplate(templateId);
-  const allPills: TemplatePill[] = [...template.pills, ...customPills];
+  const allPills: TemplatePill[] = [
+    ...template.pills.filter((p) => p.key !== "patient_first_name"),
+    ...customPills,
+  ];
   const customPillKeys = new Set(customPills.map((p) => p.key));
 
   // Build the label map passed to Canvas so chips show human labels, not keys
@@ -101,10 +110,15 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
         : template.script_text),
   );
 
-  // When the template selector changes, reset the script to the new template text
   useEffect(() => {
-    setScriptText(getTemplate(templateId).script_text);
-  }, [templateId]);
+    if (!templateOpen) return;
+    const close = (e: MouseEvent) => {
+      if (templateDropdownRef.current?.contains(e.target as Node)) return;
+      setTemplateOpen(false);
+    };
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [templateOpen]);
 
   // -------------------------------------------------------------------------
   // Pill value changes
@@ -151,6 +165,13 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
     canvasRef.current?.removeToken(key);
   };
 
+  const handleTemplateChange = (id: string) => {
+    setTemplateId(id);
+    setScriptText(getTemplate(id).script_text);
+    setCustomPills([]);
+    setTemplateOpen(false);
+  };
+
   /**
    * Called by Canvas after every user edit with the set of token keys present
    * in the canvas. If the user deleted a custom token span directly, we mirror
@@ -174,7 +195,8 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
         acc[s.id] = { name: s.name };
         return acc;
       }, {});
-      const name = getUniqueSessionName(template.name, existingNames);
+      const baseName = `${patient?.name ?? "Patient"} Call Script`;
+      const name = getUniqueSessionName(baseName, existingNames);
       await addSession({
         id: workingSessionId.current,
         patientId,
@@ -183,11 +205,13 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
         pillValues,
         customPills,
         scriptText,
+        createdAt: Date.now(),
         savedAt: Date.now(),
       });
       setIsSaved(true);
     } else {
       await updateSession(workingSessionId.current, {
+        templateId,
         pillValues,
         customPills,
         scriptText,
@@ -198,6 +222,12 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
     // Push current pill values into the patient's shared store so other
     // sessions can pre-fill from them next time they open
     await updateSharedPillValues(patientId, pillValues);
+  };
+
+  const handleResetTemplate = () => {
+    setScriptText(getTemplate(templateId).script_text);
+    setPillValues(buildInitialPillValues());
+    setCustomPills([]);
   };
 
   // Auto-save before navigating back to folder
@@ -226,7 +256,7 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
   return (
     <div
       data-testid="workspace-view"
-      className="flex flex-col h-screen bg-gray-100"
+      className="flex flex-col h-screen bg-gray-100 font-sans"
     >
       {/* ── Dark header ── */}
       <div className="bg-gray-900 px-4 py-3 flex items-center gap-3 flex-shrink-0">
@@ -242,100 +272,68 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
             className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-all flex-shrink-0 invert"
           />
         </button>
-        <span
-          data-testid="workspace-patient-name"
-          className="flex-1 text-white font-bold text-lg truncate"
-        >
-          {patient?.name ?? "Unknown Patient"}
-        </span>
+        <div className="relative flex-1" ref={templateDropdownRef}>
+          <button
+            data-testid="template-select"
+            type="button"
+            disabled={false}
+            onClick={() => setTemplateOpen((prev) => !prev)}
+            className="w-full flex items-center border border-gray-600 rounded-lg overflow-hidden disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+          >
+            <div className="pl-2.5 flex-shrink-0">
+              <img
+                src={documentIcon}
+                alt=""
+                className="w-4 h-4 opacity-40 invert"
+              />
+            </div>
+            <span className="flex-1 py-2 px-2 text-sm text-white text-left truncate">
+              {template.name}
+            </span>
+            <div className="pr-2.5 flex-shrink-0">
+              <img
+                src={chevronDownIcon}
+                alt=""
+                className={`w-4 h-4 opacity-40 invert transition-transform ${templateOpen && !isSaved ? "rotate-180" : ""}`}
+              />
+            </div>
+          </button>
+
+          {templateOpen && !isSaved && (
+            <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
+              {TEMPLATES.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => handleTemplateChange(t.id)}
+                  className={`w-full text-left px-4 cursor-pointer py-2.5 text-sm transition-colors ${
+                    t.id === templateId
+                      ? "bg-[#EEF6DC] text-brand font-medium"
+                      : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  {t.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <button
-          className="text-white/60 cursor-pointer group text-2xl leading-none p-1"
-          aria-label="More options"
+          data-testid="reset-template-btn"
+          onClick={handleResetTemplate}
+          className="flex-shrink-0 cursor-pointer border border-gray-600 rounded-lg px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 hover:border-gray-50 transition-colors"
         >
-          <img
-            src={meatballIcon}
-            alt=""
-            className="w-5 h-5 group-hover:opacity-80 rotate-90 invert"
-          />
+          Reset
         </button>
       </div>
 
       {/* ── Scrollable body ── */}
-      <div className="flex-1 overflow-y-auto flex flex-col gap-3 p-3">
+      <div className="flex-1 overflow-hidden flex flex-col gap-2 p-2">
         {/* ── Pills section ── */}
-        <div className="bg-white rounded-2xl shadow-sm p-4 flex flex-col gap-4">
-          {/* Row 1: Script Type (template) + Patient Full Name */}
-          <div className="grid grid-cols-2 gap-3">
-            {/* Script Type */}
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold tracking-wider text-gray-400 uppercase">
-                Script Type
-              </label>
-              <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
-                <div className="pl-2.5 flex-shrink-0">
-                  <img
-                    src={documentIcon}
-                    alt=""
-                    className="w-3.5 h-3.5 opacity-40"
-                  />
-                </div>
-                <select
-                  data-testid="template-select"
-                  value={templateId}
-                  onChange={(e) => setTemplateId(e.target.value)}
-                  disabled={isSaved}
-                  className="flex-1 py-2 px-2 text-sm bg-transparent focus:outline-none appearance-none cursor-pointer text-gray-800 disabled:text-gray-400 min-w-0"
-                >
-                  {TEMPLATES.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-                <div className="pr-2.5 flex-shrink-0">
-                  <img
-                    src={chevronDownIcon}
-                    alt=""
-                    className="w-3 h-3 opacity-40 pointer-events-none"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Patient Full Name */}
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-bold tracking-wider text-gray-400 uppercase">
-                Patient Full Name
-              </label>
-              <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
-                <div className="pl-2.5 flex-shrink-0">
-                  <img
-                    src={profileIcon}
-                    alt=""
-                    className="w-3.5 h-3.5"
-                    style={{
-                      filter:
-                        "invert(40%) sepia(60%) saturate(500%) hue-rotate(60deg)",
-                    }}
-                  />
-                </div>
-                <input
-                  data-testid="pill-input-patient_name"
-                  type="text"
-                  value={pillValues["patient_name"] ?? ""}
-                  onChange={(e) =>
-                    handleValueChange("patient_name", e.target.value)
-                  }
-                  placeholder="Full Name"
-                  className="flex-1 py-2 px-2 text-sm bg-transparent focus:outline-none text-gray-800 placeholder:text-gray-300 min-w-0"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Remaining pills + Add Pill button */}
+        <div className="bg-white rounded-2xl shadow-sm p-4 flex flex-col gap-3 flex-[1] min-h-0 overflow-y-auto scrollbar-thin">
+          {/* pills + Add Pill button */}
           <PillGrid
-            pills={allPills.filter((p) => p.key !== "patient_name")}
+            pills={allPills}
             customPillKeys={customPillKeys}
             pillValues={pillValues}
             onValueChange={handleValueChange}
@@ -345,13 +343,13 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
         </div>
 
         {/* ── Canvas section ── */}
-        <div className="bg-white rounded-2xl shadow-sm flex flex-col flex-1 min-h-72 overflow-hidden">
-          <div className="px-4 pt-3 pb-2 border-b border-gray-100 flex-shrink-0">
+        <div className="bg-white rounded-2xl shadow-sm flex flex-col flex-[3] min-h-0 overflow-hidden">
+          <div className="px-4 pt-3 pb-2 flex-shrink-0">
             <p className="text-xs font-bold tracking-widest text-gray-400 uppercase">
               Script
             </p>
           </div>
-          <div className="flex-1 overflow-hidden p-3">
+          <div className="flex-1 overflow-hidden px-3 pb-3">
             <Canvas
               ref={canvasRef}
               scriptText={scriptText}

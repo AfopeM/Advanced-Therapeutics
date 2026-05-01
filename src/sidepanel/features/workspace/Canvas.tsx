@@ -54,7 +54,7 @@ function tokenSpan(key: string, value: string, label: string): string {
   const display = filled ? escHtml(value) : escHtml(label || key);
   const style = filled ? FILLED_CHIP : EMPTY_CHIP;
   return (
-    `<span data-token="${escHtml(key)}" contenteditable="false" draggable="true" style="${style}">` +
+    `<span data-token="${escHtml(key)}" data-filled="${filled}" contenteditable="false" draggable="true" style="${style}">` +
     `${display}</span>`
   );
 }
@@ -211,6 +211,7 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
           const filled = value.trim().length > 0;
           span.textContent = filled ? value : (pillLabels[key] ?? key);
           span.style.cssText = filled ? FILLED_CHIP : EMPTY_CHIP;
+          span.dataset.filled = String(filled);
         });
     });
 
@@ -220,6 +221,7 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
         const filled = userName.trim().length > 0;
         span.textContent = filled ? userName : "User";
         span.style.cssText = filled ? FILLED_CHIP : EMPTY_CHIP;
+        span.dataset.filled = String(filled);
       });
   }, [pillValues, userName, pillLabels]);
 
@@ -369,7 +371,7 @@ export const Canvas = forwardRef<CanvasHandle, CanvasProps>(function Canvas(
       onDragEnd={handleDragEnd}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
-      className="text-[13px] font-serif leading-relaxed p-4 bg-white border border-dashed rounded-lg h-full overflow-y-auto outline-none font-sans scrollbar-thin"
+      className="text-[13px] font-serif leading-relaxed p-4 bg-white border border-dashed border-gray-300 rounded-lg h-full overflow-y-auto outline-none font-sans scrollbar-thin"
     />
   );
 });

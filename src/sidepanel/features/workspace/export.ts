@@ -10,19 +10,15 @@ function escapeRtf(text: string): string {
 
 // ---------------------------------------------------------------------------
 // RTF document header
-//
-// Color table (1-based index):
-//   \cf1  →  green  #16a34a  (filled chip)
-//   \cf2  →  blue   #1d4ed8  (empty chip)
 // ---------------------------------------------------------------------------
 const RTF_HEADER =
   "{\\rtf1\\ansi\\deff0" +
-  "{\\fonttbl{\\f0 Arial;}}" +
+  "{\\fonttbl{\\f0 Merriweather;}}" +
   "{\\colortbl ;" +
-  "\\red22\\green163\\blue74;" + // 1 = green text  (filled)
-  "\\red220\\green252\\blue231;" + // 2 = green bg highlight
-  "\\red146\\green64\\blue14;" + // 3 = amber text  (empty)
-  "\\red254\\green243\\blue199;" + // 4 = amber bg highlight
+  "\\red21\\green128\\blue61;" + // 1 = green text  (#15803d)
+  "\\red232\\green242\\blue236;" + // 2 = green bg    (10% of text on white)
+  "\\red180\\green83\\blue9;" + // 3 = amber text  (#b45309)
+  "\\red248\\green238\\blue230;" + // 4 = amber bg    (10% of text on white)
   "}" +
   "\\f0\\fs24\\sl360\\slmult1 ";
 
@@ -48,13 +44,10 @@ function nodeToRtf(node: Node): string {
 
   // Token chip spans — detect fill state via inline style colour hex
   if (tag === "SPAN" && el.dataset?.token) {
-    const styleAttr = el.getAttribute("style") ?? "";
-    const isFilled = styleAttr.includes("16a34a"); // green border = filled
+    const isFilled = el.dataset.filled === "true";
     if (isFilled) {
-      // Bold + green text + light-green background
       return `{\\b\\cf1\\highlight2 ${inner}}`;
     } else {
-      // Bold + amber text + amber background
       return `{\\b\\cf3\\highlight4 ${inner}}`;
     }
   }

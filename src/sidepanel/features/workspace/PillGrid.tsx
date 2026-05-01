@@ -21,6 +21,19 @@ const PILL_ICON_MAP: Record<string, string> = {
   address: mailboxIcon,
 };
 
+const PILL_PLACEHOLDER_MAP: Record<string, string> = {
+  patient_name: "John Doe",
+  patient_first_name: "John",
+  doctors_name: "Dr. Smith",
+  body_part: "Right Foot",
+  device: "Ice Pack",
+  delivered_date: "Jan 15, 2025",
+  sx_date: "Feb 3, 2025",
+  insurance_type: "Medicare",
+  ps_name: "Jane Rivera",
+  address: "123 Main St",
+};
+
 function getPillIcon(key: string): string {
   return PILL_ICON_MAP[key] ?? documentIcon;
 }
@@ -55,10 +68,10 @@ export function PillGrid({
   };
 
   return (
-    <div className="flex flex-col gap-3 h-40">
+    <div className="flex flex-col gap-3 justify-center font-sans">
       {/* Pills — 2-col grid */}
       {pills.length > 0 && (
-        <div className="grid grid-cols-3 gap-2 overflow-y-auto scrollbar-thin">
+        <div className="grid grid-cols-3 gap-2">
           {pills.map((pill) => (
             <div key={pill.key} className="flex flex-col gap-1">
               {/* Label + delete button */}
@@ -100,7 +113,7 @@ export function PillGrid({
                   type="text"
                   value={pillValues[pill.key] ?? ""}
                   onChange={(e) => onValueChange(pill.key, e.target.value)}
-                  placeholder={pill.label}
+                  placeholder={PILL_PLACEHOLDER_MAP[pill.key] ?? pill.label}
                   className="flex-1 py-2 px-2 text-sm bg-transparent focus:outline-none text-gray-800 placeholder:text-gray-300 min-w-0"
                 />
               </div>
@@ -136,9 +149,9 @@ export function PillGrid({
         <button
           data-testid="add-pill-btn"
           onClick={() => setIsAdding(true)}
-          className="w-full py-2.5 cursor-pointer border border-dashed border-gray-300 rounded-lg text-sm text-gray-400 hover:border-brand hover:text-brand font-medium transition-colors"
+          className="flex items-center gap-2 justify-center w-full py-2.5 cursor-pointer border border-dashed border-gray-300 rounded-lg text-sm text-gray-400 hover:border-brand hover:text-brand font-medium transition-colors"
         >
-          + Add Pill
+          <span>Add Pill</span>
         </button>
       )}
     </div>
