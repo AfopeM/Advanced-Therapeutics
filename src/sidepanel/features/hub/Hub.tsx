@@ -219,7 +219,7 @@ export function Hub({ userName, onOpenSettings, onPatientClick }: HubProps) {
           <button
             data-testid="new-patient-btn"
             onClick={handleNewPatientClick}
-            className="w-full bg-brand hover:bg-brand/90 active:bg-brand/50 cursor-pointer text-white font-bold rounded-xl py-3 flex items-center justify-center gap-2 shadow-sm transition-colors"
+            className="w-full bg-brand cursor-pointer group text-sm hover:bg-brand/90 active:bg-brand/70 text-white font-medium rounded-xl py-3 flex items-center justify-center gap-2 shadow-sm transition-colors"
           >
             <img
               src={plusIcon}
