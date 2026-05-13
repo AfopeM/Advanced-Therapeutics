@@ -97,7 +97,7 @@ export function PillGrid({
 
               {/* Input with icon */}
               <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-white">
-                <div className="pl-2.5 flex-shrink-0">
+                <div className="pl-2.5 shrink-0">
                   <img
                     src={getPillIcon(pill.key)}
                     alt=""

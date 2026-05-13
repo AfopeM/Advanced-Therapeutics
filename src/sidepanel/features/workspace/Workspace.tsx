@@ -17,6 +17,7 @@ import saveIcon from "../../../assets/icons/save.svg";
 import documentIcon from "../../../assets/icons/document.svg";
 import arrowIcon from "../../../assets/icons/arrow.svg";
 import Footer from "../../shared/components/Footer";
+import { buildClipboardHtml, buildClipboardText } from "./clipboard";
 
 interface WorkspaceProps {
   patientId: string;
@@ -33,6 +34,8 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
 
   const patient = patients[patientId];
   const existingSession = sessionId ? sessions[sessionId] : null;
+
+  const [copySuccess, setCopySuccess] = useState<"html" | "text" | null>(null);
 
   // -------------------------------------------------------------------------
   // Build the initial pill values for this workspace.
@@ -181,6 +184,37 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
     setCustomPills((prev) => prev.filter((p) => presentKeys.has(p.key)));
   };
 
+  const handleCopy = async () => {
+    const raw = canvasRef.current?.getHtml() ?? "";
+    const html = buildClipboardHtml(raw);
+    const text = buildClipboardText(raw);
+
+    try {
+      // Write both flavours at once. Apps that understand HTML (Gmail, Notion)
+      // will pick the HTML blob. Plain-text editors pick the text blob.
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          "text/html": new Blob([html], { type: "text/html" }),
+          "text/plain": new Blob([text], { type: "text/plain" }),
+        }),
+      ]);
+      setCopySuccess("html");
+    } catch {
+      // Focus was lost or the browser blocked the rich-text write.
+      // Fall back to plain text — at least the content gets through.
+      try {
+        await navigator.clipboard.writeText(text);
+        setCopySuccess("text");
+      } catch {
+        // Both paths failed — nothing useful to do silently.
+        console.error("Clipboard write failed");
+      }
+    }
+
+    // Auto-reset the toast after 2 seconds regardless of which path succeeded
+    setTimeout(() => setCopySuccess(null), 2000);
+  };
+
   // -------------------------------------------------------------------------
   // Save
   // -------------------------------------------------------------------------
@@ -259,7 +293,7 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
       className="flex flex-col h-screen bg-gray-100 font-sans"
     >
       {/* ── Dark header ── */}
-      <div className="bg-gray-900 px-4 py-3 flex items-center gap-3 flex-shrink-0">
+      <div className="bg-gray-900 px-4 py-3 flex items-center gap-3 shrink-0">
         <button
           data-testid="workspace-back"
           onClick={handleBack}
@@ -269,7 +303,7 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
           <img
             src={arrowIcon}
             alt=""
-            className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-all flex-shrink-0 invert"
+            className="w-5 h-5 opacity-40 group-hover:opacity-100 transition-all shrink-0 invert"
           />
         </button>
         <div className="relative flex-1" ref={templateDropdownRef}>
@@ -280,7 +314,7 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
             onClick={() => setTemplateOpen((prev) => !prev)}
             className="w-full flex items-center border border-gray-600 rounded-lg overflow-hidden disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
           >
-            <div className="pl-2.5 flex-shrink-0">
+            <div className="pl-2.5 shrink-0">
               <img
                 src={documentIcon}
                 alt=""
@@ -290,7 +324,7 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
             <span className="flex-1 py-2 px-2 text-sm text-white text-left truncate">
               {template.name}
             </span>
-            <div className="pr-2.5 flex-shrink-0">
+            <div className="pr-2.5 shrink-0">
               <img
                 src={chevronDownIcon}
                 alt=""
@@ -321,7 +355,7 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
         <button
           data-testid="reset-template-btn"
           onClick={handleResetTemplate}
-          className="flex-shrink-0 cursor-pointer border border-gray-600 rounded-lg px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 hover:border-gray-50 transition-colors"
+          className="shrink-0 cursor-pointer border border-gray-600 rounded-lg px-4 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 hover:border-gray-50 transition-colors"
         >
           Reset
         </button>
@@ -330,7 +364,7 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
       {/* ── Scrollable body ── */}
       <div className="flex-1 overflow-hidden flex flex-col gap-2 p-2">
         {/* ── Pills section ── */}
-        <div className="bg-white rounded-2xl shadow-sm p-4 flex flex-col gap-3 flex-[1] min-h-0 overflow-y-auto scrollbar-thin">
+        <div className="bg-white rounded-2xl shadow-sm p-4 flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto scrollbar-thin">
           {/* pills + Add Pill button */}
           <PillGrid
             pills={allPills}
@@ -343,8 +377,8 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
         </div>
 
         {/* ── Canvas section ── */}
-        <div className="bg-white rounded-2xl shadow-sm flex flex-col flex-[3] min-h-0 overflow-hidden">
-          <div className="px-4 pt-3 pb-2 flex-shrink-0">
+        <div className="bg-white rounded-2xl shadow-sm flex flex-col flex-3 min-h-0 overflow-hidden">
+          <div className="px-4 pt-3 pb-2 shrink-0">
             <p className="text-xs font-bold tracking-widest text-gray-400 uppercase">
               Script
             </p>
@@ -365,32 +399,63 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
       </div>
 
       {/* ── Footer ── */}
-      <div className="flex-shrink-0 bg-white border-t border-gray-100 px-4 pt-3 pb-3">
-        <div className="flex gap-3 mb-2.5">
+      <div className="shrink-0 bg-white border-t border-gray-100 px-4 pt-3 pb-3">
+        {/* ── Row 1: secondary actions ── */}
+        <div className="flex gap-3 mb-2">
           {/* Save Draft */}
           <button
             data-testid="save-session-btn"
             onClick={saveSession}
-            className="flex-1 flex cursor-pointer items-center justify-center gap-2 border border-gray-200 rounded-xl py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+            className="flex-1 flex cursor-pointer items-center justify-center gap-2 border border-gray-200 rounded-xl py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
           >
             <img src={saveIcon} alt="" className="w-5 h-5 opacity-50" />
             Save Draft
           </button>
 
-          {/* Download .rtf */}
+          {/* Copy Script */}
           <button
-            data-testid="download-rtf-btn"
-            onClick={handleDownload}
-            className="flex-1 flex cursor-pointer items-center justify-center gap-2 bg-brand hover:bg-brand-alt text-white rounded-xl py-3 text-sm font-semibold transition-colors"
+            data-testid="copy-script-btn"
+            onClick={handleCopy}
+            className="flex-1 flex cursor-pointer items-center justify-center gap-2 border border-gray-200 rounded-xl py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
           >
-            <img
-              src={downloadIcon}
-              alt=""
-              className="w-4 h-4 brightness-0 invert"
-            />
-            Download .rtf
+            {copySuccess === "html" ? (
+              <span className="text-green-600">Copied ✓</span>
+            ) : copySuccess === "text" ? (
+              <span className="text-amber-600">Copied as plain text</span>
+            ) : (
+              <>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="w-4 h-4 opacity-50"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect x="9" y="9" width="13" height="13" rx="2" />
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                </svg>
+                Copy Script
+              </>
+            )}
           </button>
         </div>
+
+        {/* ── Row 2: primary action ── */}
+        <button
+          data-testid="download-rtf-btn"
+          onClick={handleDownload}
+          className="w-full flex cursor-pointer items-center justify-center gap-2 bg-brand hover:bg-brand-alt text-white rounded-xl py-3 text-sm font-semibold transition-colors mb-2.5"
+        >
+          <img
+            src={downloadIcon}
+            alt=""
+            className="w-4 h-4 brightness-0 invert"
+          />
+          Download .rtf
+        </button>
 
         <Footer />
       </div>
