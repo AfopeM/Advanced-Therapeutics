@@ -14,7 +14,7 @@ export const SessionSchema = z.object({
   customPills: z.array(CustomPillSchema).optional(),
   scriptText: z.string().optional(),
   savedAt: z.number(),
-  createdAt: z.number(),
+  createdAt: z.number().optional(),
 });
 
 export type Session = z.infer<typeof SessionSchema>;

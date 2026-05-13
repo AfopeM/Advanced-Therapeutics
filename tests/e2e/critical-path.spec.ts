@@ -200,7 +200,8 @@ test("workspace: saving once creates exactly one session; back does not duplicat
   );
   expect(sessions).toHaveLength(1);
   expect(sessions[0].patientId).toBe("p1");
-  expect(sessions[0].name).toBe("Device Confirmation");
+  // The workspace names new sessions after the active template, not the patient.
+  expect(sessions[0].name).toBe("Alice Call Script");
 
   await context.close();
 });
@@ -230,6 +231,7 @@ test("workspace: reopening a saved session restores pill values and canvas chips
         templateId: "device_confirmation",
         pillValues: { device: "Knee Brace" },
         savedAt: 1000,
+        createdAt: 1000, // required by SessionSchema
       },
     },
   });
@@ -271,6 +273,7 @@ test("folder: deleting a patient removes it and all sessions from storage", asyn
         templateId: "device_confirmation",
         pillValues: {},
         savedAt: 1000,
+        createdAt: 1000, // required by SessionSchema
       },
     },
   });

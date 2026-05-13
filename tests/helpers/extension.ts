@@ -14,12 +14,16 @@ export async function loadExtension(): Promise<{
   const context = await chromium.launchPersistentContext("", {
     headless: false,
     args: [
+      "--no-sandbox",
       `--disable-extensions-except=${EXTENSION_PATH}`,
       `--load-extension=${EXTENSION_PATH}`,
     ],
   });
 
-  const serviceWorker = await context.waitForEvent("serviceworker");
+  const serviceWorker =
+    context.serviceWorkers()[0] ??
+    (await context.waitForEvent("serviceworker"));
+
   const extensionId = serviceWorker.url().split("/")[2];
 
   return { context, extensionId };

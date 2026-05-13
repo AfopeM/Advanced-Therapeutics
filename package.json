@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test:e2e:phases": "playwright test tests/e2e/phase2.settings.spec.ts tests/e2e/phase3.hub.spec.ts tests/e2e/phase4.folder.spec.ts"
+    "test:e2e:critical": "playwright test tests/e2e/critical-path.spec.ts"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.4",
@@ -22,7 +22,7 @@
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.59.1",
     "@types/chrome": "^0.1.40",
-    "@types/node": "^24.12.2",
+    "@types/node": "^24.12.4",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
