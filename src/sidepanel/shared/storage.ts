@@ -3,6 +3,12 @@ import { PatientSchema, type Patient } from "./schemas/patient.schema";
 import { SessionSchema, type Session } from "./schemas/session.schema";
 import { UserSchema, type User } from "./schemas/user.schema";
 
+// Add this import at the top of storage.ts, alongside the existing schema imports:
+import {
+  UserTemplateSchema,
+  type UserTemplate,
+} from "./schemas/userTemplate.schema";
+
 // --- Helpers ---
 
 async function get<T>(key: string, schema: z.ZodType<T>): Promise<T | null> {
@@ -57,4 +63,21 @@ export async function saveSessions(
   sessions: Record<string, Session>,
 ): Promise<void> {
   return set("sessions", sessions);
+}
+
+// --- User Templates ---
+// Add these two functions at the bottom of storage.ts:
+
+const UserTemplatesMapSchema = z.record(z.string(), UserTemplateSchema);
+
+export async function loadUserTemplates(): Promise<
+  Record<string, UserTemplate>
+> {
+  return (await get("userTemplates", UserTemplatesMapSchema)) ?? {};
+}
+
+export async function saveUserTemplates(
+  templates: Record<string, UserTemplate>,
+): Promise<void> {
+  return set("userTemplates", templates);
 }

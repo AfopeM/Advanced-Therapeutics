@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import type { Session } from "../../shared/schemas/session.schema";
-import { getTemplate } from "../../../defaults/templates";
+import { useTemplateStore } from "../../shared/store/useTemplateStore";
 import { formatScriptDate } from "../../shared/utils";
 import documentIcon from "../../../assets/icons/document.svg";
 import meatballIcon from "../../../assets/icons/meatball.svg";
@@ -28,7 +28,8 @@ export function SessionCard({
   const [renameValue, setRenameValue] = useState(session.name);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const template = getTemplate(session.templateId);
+  const { resolveTemplate } = useTemplateStore();
+  const template = resolveTemplate(session.templateId);
 
   // Use createdAt if it exists, fall back to savedAt for older records
   const createdAt = (session as any).createdAt ?? session.savedAt;

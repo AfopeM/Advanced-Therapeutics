@@ -8,6 +8,7 @@ import { Folder } from "./features/folder/Folder";
 import { Workspace } from "./features/workspace/Workspace";
 import Footer from "./shared/components/Footer";
 import menuIcon from "../assets/icons/menu.svg";
+import { useTemplateStore } from "./shared/store/useTemplateStore";
 
 type View = "hub" | "folder" | "workspace";
 
@@ -15,6 +16,7 @@ export function App() {
   const { load: loadUser, name, isLoaded: userLoaded } = useUserStore();
   const { load: loadPatients } = usePatientStore();
   const { load: loadSessions } = useSessionStore();
+  const { load: loadTemplates, isLoaded: templatesLoaded } = useTemplateStore();
 
   // Which screen is visible
   const [view, setView] = useState<View>("hub");
@@ -31,6 +33,7 @@ export function App() {
     loadUser();
     loadPatients();
     loadSessions();
+    loadTemplates();
   }, []);
 
   const handleCloseSettings = () => {
@@ -63,7 +66,7 @@ export function App() {
     setView("folder");
   };
 
-  if (!userLoaded) return null;
+  if (!userLoaded || !templatesLoaded) return null;
 
   // Settings overlays any view
   if (settingsOpen) {
@@ -101,7 +104,7 @@ export function App() {
   return (
     <div className="flex flex-col h-screen bg-gray-50 font-sans">
       {/* ── Green branded header ── */}
-      <div className="bg-dark px-4 py-3 flex items-center justify-between flex-shrink-0">
+      <div className="bg-dark px-4 py-3 flex items-center justify-between shrink-0">
         <div>
           <p className="text-brand uppercase font-black text-2xl leading-none tracking-wider">
             Advanced
@@ -119,7 +122,7 @@ export function App() {
           <img
             src={menuIcon}
             alt=""
-            className="w-6 h-6 opacity-100 group-hover:opacity-40 transition-all flex-shrink-0 invert"
+            className="w-6 h-6 opacity-100 group-hover:opacity-40 transition-all shrink-0 invert"
           />
         </button>
       </div>

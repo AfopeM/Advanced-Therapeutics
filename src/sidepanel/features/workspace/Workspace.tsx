@@ -2,11 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { usePatientStore } from "../../shared/store/usePatientStore";
 import { useSessionStore } from "../../shared/store/useSessionStore";
 import { useUserStore } from "../../shared/store/useUserStore";
-import {
-  TEMPLATES,
-  getTemplate,
-  type TemplatePill,
-} from "../../../defaults/templates";
+import { TEMPLATES, type TemplatePill } from "../../../defaults/templates";
+import { useTemplateStore } from "../../shared/store/useTemplateStore";
 import { getUniqueSessionName, generateId } from "../../shared/utils";
 import { Canvas, type CanvasHandle } from "./Canvas";
 import { PillGrid } from "./PillGrid";
@@ -31,6 +28,8 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
     useSessionStore();
   const { name: userName } = useUserStore();
   const [templateOpen, setTemplateOpen] = useState(false);
+
+  const { resolveTemplate, userTemplates } = useTemplateStore();
 
   const patient = patients[patientId];
   const existingSession = sessionId ? sessions[sessionId] : null;
@@ -87,7 +86,7 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
   const canvasRef = useRef<CanvasHandle>(null);
   const templateDropdownRef = useRef<HTMLDivElement>(null);
 
-  const template = getTemplate(templateId);
+  const template = resolveTemplate(templateId);
   const allPills: TemplatePill[] = [
     ...template.pills.filter((p) => p.key !== "patient_first_name"),
     ...customPills,
@@ -109,7 +108,7 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
   const [scriptText, setScriptText] = useState(
     existingSession?.scriptText ??
       (existingSession
-        ? getTemplate(existingSession.templateId).script_text
+        ? resolveTemplate(existingSession.templateId)?.script_text
         : template.script_text),
   );
 
@@ -170,7 +169,7 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
 
   const handleTemplateChange = (id: string) => {
     setTemplateId(id);
-    setScriptText(getTemplate(id).script_text);
+    setScriptText(resolveTemplate(id)?.script_text);
     setCustomPills([]);
     setTemplateOpen(false);
   };
@@ -259,7 +258,7 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
   };
 
   const handleResetTemplate = () => {
-    setScriptText(getTemplate(templateId).script_text);
+    setScriptText(resolveTemplate(templateId)?.script_text);
     setPillValues(buildInitialPillValues());
     setCustomPills([]);
   };
@@ -283,6 +282,11 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
       buildRtfFilename(patient?.name ?? "Patient", sessionName),
     );
   };
+
+  const allTemplates = [
+    ...TEMPLATES,
+    ...Object.values(userTemplates).map((t) => resolveTemplate(t.id)),
+  ];
 
   // -------------------------------------------------------------------------
   // Render
@@ -335,7 +339,7 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
 
           {templateOpen && !isSaved && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
-              {TEMPLATES.map((t) => (
+              {allTemplates.map((t) => (
                 <button
                   key={t.id}
                   type="button"

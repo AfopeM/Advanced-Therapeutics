@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useUserStore } from "../../shared/store/useUserStore";
 import { usePatientStore } from "../../shared/store/usePatientStore";
 import { useSessionStore } from "../../shared/store/useSessionStore";
-import { getTemplate } from "../../../defaults/templates";
+import { useTemplateStore } from "../../shared/store/useTemplateStore";
 import { formatScriptDate } from "../../shared/utils";
 import profileIcon from "../../../assets/icons/profile.svg";
 import downloadIcon from "../../../assets/icons/download.svg";
@@ -121,7 +121,10 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
 
         for (const session of sessions) {
           const pv = session.pillValues ?? {};
-          const template = getTemplate(session.templateId);
+          // inside Settings() function body, with the other store hooks:
+          const { resolveTemplate } = useTemplateStore();
+          // inside handleExport():
+          const template = resolveTemplate(session.templateId);
 
           // Collect custom pill entries not in the standard key set
           const customEntries = Object.entries(pv)
