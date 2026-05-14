@@ -228,7 +228,7 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
         acc[s.id] = { name: s.name };
         return acc;
       }, {});
-      const baseName = `${patient?.name ?? "Patient"} Call Script`;
+      const baseName = `${patient?.name ?? "Patient"} — Call Script`;
       const name = getUniqueSessionName(baseName, existingNames);
       await addSession({
         id: workingSessionId.current,
@@ -339,7 +339,22 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
 
           {templateOpen && !isSaved && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-xl z-50 overflow-hidden">
-              {allTemplates.map((t) => (
+              {/* {allTemplates.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => handleTemplateChange(t.id)}
+                  className={`w-full text-left px-4 cursor-pointer py-2.5 text-sm transition-colors ${
+                    t.id === templateId
+                      ? "bg-[#EEF6DC] text-brand font-medium"
+                      : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  {t.name}
+                </button>
+              ))} */}
+
+              {TEMPLATES.map((t) => (
                 <button
                   key={t.id}
                   type="button"
@@ -353,6 +368,30 @@ export function Workspace({ patientId, sessionId, onBack }: WorkspaceProps) {
                   {t.name}
                 </button>
               ))}
+              {Object.keys(userTemplates).length > 0 && (
+                <>
+                  <div className="px-4 py-1.5 text-[10px] font-bold tracking-widest text-gray-400 uppercase bg-gray-50 border-t border-gray-100">
+                    Your Templates
+                  </div>
+                  {Object.values(userTemplates).map((ut) => {
+                    const t = resolveTemplate(ut.id);
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => handleTemplateChange(t.id)}
+                        className={`w-full text-left px-4 cursor-pointer py-2.5 text-sm transition-colors ${
+                          t.id === templateId
+                            ? "bg-[#EEF6DC] text-brand font-medium"
+                            : "text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        {t.name}
+                      </button>
+                    );
+                  })}
+                </>
+              )}
             </div>
           )}
         </div>

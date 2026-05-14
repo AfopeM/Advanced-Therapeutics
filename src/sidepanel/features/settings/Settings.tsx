@@ -8,18 +8,21 @@ import profileIcon from "../../../assets/icons/profile.svg";
 import downloadIcon from "../../../assets/icons/download.svg";
 import trashIcon from "../../../assets/icons/trash.svg";
 import infoIcon from "../../../assets/icons/info.svg";
+import chevronRightIcon from "../../../assets/icons/chevron-down.svg"; // reuse, rotated -90
 import Footer from "../../shared/components/Footer";
 import arrowIcon from "../../../assets/icons/arrow.svg";
+import { TemplateList } from "./templates/TemplateList";
+import { TemplateEditor } from "./templates/TemplateEditor";
+import type { UserTemplate } from "../../shared/schemas/userTemplate.schema";
+
+// ── View state machine ────────────────────────────────────────────────────────
+type SettingsView = "main" | "template-list" | "template-editor";
 
 interface SettingsProps {
   onClose: () => void;
   guardrailMessage?: string;
 }
 
-// ---------------------------------------------------------------------------
-// These are the "known" structured fields. Anything in a session's pillValues
-// that is NOT in this set is treated as a custom pill → goes into Other Fields.
-// ---------------------------------------------------------------------------
 const STANDARD_KEYS = new Set([
   "patient_name",
   "patient_first_name",
@@ -36,7 +39,14 @@ const STANDARD_KEYS = new Set([
 export function Settings({ onClose, guardrailMessage }: SettingsProps) {
   const { name, setName } = useUserStore();
   const { patients, deletePatient } = usePatientStore();
-  const { getSessionsByPatient, deleteSessionsByPatient } = useSessionStore();
+  const { sessions, getSessionsByPatient, deleteSession, deleteSessionsByPatient } =
+    useSessionStore();
+  // ── FIX: hook must live at component level, never inside a loop ──
+  const { resolveTemplate, userTemplates } = useTemplateStore();
+
+  const [settingsView, setSettingsView] = useState<SettingsView>("main");
+  // Which template is being edited (null = creating new)
+  const [editingTemplate, setEditingTemplate] = useState<UserTemplate | null>(null);
 
   const [input, setInput] = useState(name);
   const [isExporting, setIsExporting] = useState(false);
@@ -54,15 +64,10 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
     onClose();
   };
 
-  // -------------------------------------------------------------------------
-  // Clear All Data
-  // Deletes every patient and all their sessions, then resets UI state.
-  // -------------------------------------------------------------------------
   const handleClearAll = async () => {
     setIsClearing(true);
     try {
       const allPatientIds = Object.keys(patients);
-      // Delete sessions first (foreign key order), then the patient record
       for (const id of allPatientIds) {
         await deleteSessionsByPatient(id);
         await deletePatient(id);
@@ -73,16 +78,10 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
     }
   };
 
-  // -------------------------------------------------------------------------
-  // Export All Data as XLSX
-  // Loaded on demand — xlsx is NOT in the main bundle.
-  // -------------------------------------------------------------------------
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      // Dynamic import — only downloads SheetJS when the user actually clicks
       const XLSX = await import("xlsx");
-
       const allPatientList = Object.values(patients);
 
       if (allPatientList.length === 0) {
@@ -90,16 +89,12 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
         return;
       }
 
-      // ------------------------------------------------------------------
-      // Build rows — one row per session
-      // ------------------------------------------------------------------
       const rows: Record<string, string>[] = [];
 
       for (const patient of allPatientList) {
-        const sessions = getSessionsByPatient(patient.id);
+        const patientSessions = getSessionsByPatient(patient.id);
 
-        // A patient with no sessions still gets one row so their info isn't lost
-        if (sessions.length === 0) {
+        if (patientSessions.length === 0) {
           rows.push({
             "Patient Name": patient.name,
             "Doctor's Name": "",
@@ -119,18 +114,14 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
           continue;
         }
 
-        for (const session of sessions) {
+        for (const session of patientSessions) {
           const pv = session.pillValues ?? {};
-          // inside Settings() function body, with the other store hooks:
-          const { resolveTemplate } = useTemplateStore();
-          // inside handleExport():
+          // resolveTemplate is now safely called from component scope above
           const template = resolveTemplate(session.templateId);
 
-          // Collect custom pill entries not in the standard key set
           const customEntries = Object.entries(pv)
             .filter(([key]) => !STANDARD_KEYS.has(key))
             .map(([key, value]) => {
-              // Convert snake_case key back to a readable label
               const label = key
                 .replace(/_/g, " ")
                 .replace(/\b\w/g, (c) => c.toUpperCase());
@@ -138,8 +129,6 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
             })
             .join(" | ");
 
-          // createdAt was added in a previous session — fall back to savedAt
-          // for any sessions created before that field existed
           const createdAt = (session as any).createdAt ?? session.savedAt;
 
           rows.push({
@@ -161,32 +150,14 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
         }
       }
 
-      // ------------------------------------------------------------------
-      // Build the workbook and trigger download
-      // ------------------------------------------------------------------
       const worksheet = XLSX.utils.json_to_sheet(rows);
-
-      // Set a sensible minimum column width so headers aren't clipped
       worksheet["!cols"] = [
-        { wch: 20 }, // Patient Name
-        { wch: 20 }, // Doctor's Name
-        { wch: 15 }, // Body Part
-        { wch: 15 }, // Device
-        { wch: 16 }, // Delivered Date
-        { wch: 14 }, // SX Date
-        { wch: 16 }, // Insurance Type
-        { wch: 16 }, // PS Name
-        { wch: 22 }, // Address
-        { wch: 28 }, // Script Name
-        { wch: 20 }, // Script Type
-        { wch: 22 }, // Created On
-        { wch: 22 }, // Last Updated
-        { wch: 40 }, // Other Fields
+        { wch: 20 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 16 },
+        { wch: 14 }, { wch: 16 }, { wch: 16 }, { wch: 22 }, { wch: 28 },
+        { wch: 20 }, { wch: 22 }, { wch: 22 }, { wch: 40 },
       ];
-
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, "Scripts");
-
       const today = new Date().toISOString().split("T")[0];
       XLSX.writeFile(workbook, `patient-data-${today}.xlsx`);
     } catch (err) {
@@ -197,15 +168,43 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
     }
   };
 
-  // -------------------------------------------------------------------------
-  // Render
-  // -------------------------------------------------------------------------
+  // ── Sub-view routing ──────────────────────────────────────────────────────
+
+  if (settingsView === "template-list") {
+    return (
+      <TemplateList
+        onBack={() => setSettingsView("main")}
+        onNew={() => {
+          setEditingTemplate(null);
+          setSettingsView("template-editor");
+        }}
+        onEdit={(template) => {
+          setEditingTemplate(template);
+          setSettingsView("template-editor");
+        }}
+      />
+    );
+  }
+
+  if (settingsView === "template-editor") {
+    return (
+      <TemplateEditor
+        template={editingTemplate}
+        onBack={() => setSettingsView("template-list")}
+        onSaved={() => setSettingsView("template-list")}
+      />
+    );
+  }
+
+  // ── Main settings view ────────────────────────────────────────────────────
+  const userTemplateCount = Object.keys(userTemplates).length;
+
   return (
     <div
       data-testid="settings-overlay"
       className="flex flex-col h-screen bg-gray-100 font-sans"
     >
-      {/* ── Dark header ── */}
+      {/* Header */}
       <div className="bg-dark px-4 py-3 flex items-center gap-3 flex-shrink-0">
         <button
           data-testid="settings-back"
@@ -224,7 +223,7 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
         </h1>
       </div>
 
-      {/* ── Scrollable body ── */}
+      {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto px-4 py-5 flex flex-col gap-5">
         {guardrailMessage && (
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
@@ -237,18 +236,14 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
           </div>
         )}
 
-        {/* ── YOUR NAME ── */}
+        {/* YOUR NAME */}
         <div>
           <p className="text-xs font-bold tracking-widest text-gray-400 uppercase mb-2 px-1">
             Your Name
           </p>
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
             <div className="flex items-center gap-3 px-4 py-1">
-              <img
-                src={profileIcon}
-                alt=""
-                className="w-5 h-5 opacity-40 flex-shrink-0"
-              />
+              <img src={profileIcon} alt="" className="w-5 h-5 opacity-40 flex-shrink-0" />
               <input
                 data-testid="name-input"
                 type="text"
@@ -269,28 +264,58 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
           Save
         </button>
 
-        {/* ── DATA ── */}
+        {/* TEMPLATES */}
+        <div>
+          <p className="text-[11px] font-bold tracking-widest text-gray-400 uppercase mb-2 px-1">
+            Templates
+          </p>
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            <button
+              data-testid="manage-templates-btn"
+              onClick={() => setSettingsView("template-list")}
+              className="w-full flex items-center cursor-pointer gap-3.5 px-4 py-3.5 hover:bg-gray-50 transition-colors text-left"
+            >
+              <div className="w-8 h-8 rounded-lg bg-[#EEF6DC] flex items-center justify-center flex-shrink-0">
+                {/* Simple template/document icon using inline SVG */}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7A9E2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <line x1="7" y1="8" x2="17" y2="8" />
+                  <line x1="7" y1="12" x2="17" y2="12" />
+                  <line x1="7" y1="16" x2="12" y2="16" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-800">
+                  Manage Templates
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {userTemplateCount === 0
+                    ? "No custom templates yet"
+                    : `${userTemplateCount} custom ${userTemplateCount === 1 ? "template" : "templates"}`}
+                </p>
+              </div>
+              <img
+                src={chevronRightIcon}
+                alt=""
+                className="w-4 h-4 opacity-30 -rotate-90"
+              />
+            </button>
+          </div>
+        </div>
+
+        {/* DATA */}
         <div>
           <p className="text-[11px] font-bold tracking-widest text-gray-400 uppercase mb-2 px-1">
             Data
           </p>
           <div className="bg-white rounded-xl shadow-sm overflow-hidden divide-y divide-gray-100">
-            {/* Export All Data */}
             <button
               onClick={handleExport}
               disabled={isExporting}
               className="w-full flex items-center cursor-pointer gap-3.5 px-4 py-3.5 hover:bg-gray-50 transition-colors text-left disabled:opacity-50"
             >
               <div className="w-8 h-8 rounded-lg bg-[#EEF6DC] flex items-center justify-center flex-shrink-0">
-                <img
-                  src={downloadIcon}
-                  alt=""
-                  className="w-4 h-4"
-                  style={{
-                    filter:
-                      "invert(40%) sepia(60%) saturate(500%) hue-rotate(60deg)",
-                  }}
-                />
+                <img src={downloadIcon} alt="" className="w-4 h-4" style={{ filter: "invert(40%) sepia(60%) saturate(500%) hue-rotate(60deg)" }} />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-gray-800">
@@ -303,37 +328,26 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
               <span className="text-gray-300 text-lg">›</span>
             </button>
 
-            {/* Clear All Data */}
             <button
               onClick={() => setShowClearConfirm(true)}
               disabled={isClearing}
               className="w-full flex items-center cursor-pointer gap-3.5 px-4 py-3.5 hover:bg-red-50 transition-colors text-left disabled:opacity-50"
             >
               <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
-                <img
-                  src={trashIcon}
-                  alt=""
-                  className="w-4 h-4"
-                  style={{
-                    filter:
-                      "invert(30%) sepia(80%) saturate(500%) hue-rotate(330deg)",
-                  }}
-                />
+                <img src={trashIcon} alt="" className="w-4 h-4" style={{ filter: "invert(30%) sepia(80%) saturate(500%) hue-rotate(330deg)" }} />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-red-500">
                   {isClearing ? "Clearing…" : "Clear All Data"}
                 </p>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  This action cannot be undone
-                </p>
+                <p className="text-xs text-gray-400 mt-0.5">This action cannot be undone</p>
               </div>
               <span className="text-gray-300 text-lg">›</span>
             </button>
           </div>
         </div>
 
-        {/* ── ABOUT ── */}
+        {/* ABOUT */}
         <div>
           <p className="text-[11px] font-bold tracking-widest text-gray-400 uppercase mb-2 px-1">
             About
@@ -341,20 +355,10 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
             <div className="flex items-center gap-3.5 px-4 py-3.5">
               <div className="w-8 h-8 rounded-lg bg-[#EEF6DC] flex items-center justify-center flex-shrink-0">
-                <img
-                  src={infoIcon}
-                  alt=""
-                  className="w-4 h-4"
-                  style={{
-                    filter:
-                      "invert(40%) sepia(60%) saturate(500%) hue-rotate(60deg)",
-                  }}
-                />
+                <img src={infoIcon} alt="" className="w-4 h-4" style={{ filter: "invert(40%) sepia(60%) saturate(500%) hue-rotate(60deg)" }} />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-gray-800">
-                  About Advanced Therapeutics
-                </p>
+                <p className="text-sm font-semibold text-gray-800">About Advanced Therapeutics</p>
                 <p className="text-xs text-gray-400 mt-0.5">Version 1.0.0</p>
               </div>
             </div>
@@ -364,16 +368,13 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
 
       <Footer />
 
-      {/* ── Clear confirmation dialog ── */}
+      {/* Clear confirmation */}
       {showClearConfirm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl">
-            <p className="text-sm font-semibold text-gray-800 mb-1">
-              Clear all data?
-            </p>
+            <p className="text-sm font-semibold text-gray-800 mb-1">Clear all data?</p>
             <p className="text-sm text-gray-500 mb-6">
-              Every patient and script will be permanently deleted. This cannot
-              be undone.
+              Every patient and script will be permanently deleted. This cannot be undone.
             </p>
             <div className="flex gap-3 justify-end">
               <button
