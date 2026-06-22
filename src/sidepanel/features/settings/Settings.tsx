@@ -39,14 +39,20 @@ const STANDARD_KEYS = new Set([
 export function Settings({ onClose, guardrailMessage }: SettingsProps) {
   const { name, setName } = useUserStore();
   const { patients, deletePatient } = usePatientStore();
-  const { sessions, getSessionsByPatient, deleteSession, deleteSessionsByPatient } =
-    useSessionStore();
+  const {
+    sessions,
+    getSessionsByPatient,
+    deleteSession,
+    deleteSessionsByPatient,
+  } = useSessionStore();
   // ── FIX: hook must live at component level, never inside a loop ──
   const { resolveTemplate, userTemplates } = useTemplateStore();
 
   const [settingsView, setSettingsView] = useState<SettingsView>("main");
   // Which template is being edited (null = creating new)
-  const [editingTemplate, setEditingTemplate] = useState<UserTemplate | null>(null);
+  const [editingTemplate, setEditingTemplate] = useState<UserTemplate | null>(
+    null,
+  );
 
   const [input, setInput] = useState(name);
   const [isExporting, setIsExporting] = useState(false);
@@ -81,7 +87,6 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      const XLSX = await import("xlsx");
       const allPatientList = Object.values(patients);
 
       if (allPatientList.length === 0) {
@@ -89,35 +94,58 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
         return;
       }
 
-      const rows: Record<string, string>[] = [];
+      const headers = [
+        "Patient Name",
+        "Doctor's Name",
+        "Body Part",
+        "Device",
+        "Delivered Date",
+        "SX Date",
+        "Insurance Type",
+        "PS Name",
+        "Address",
+        "Script Name",
+        "Script Type",
+        "Created On",
+        "Last Updated",
+        "Other Fields",
+      ];
+
+      const escapeCell = (value: string) => {
+        // Wrap in quotes if the value contains commas, quotes, or newlines
+        if (/[",\n]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
+        return value;
+      };
+
+      const rows: string[][] = [];
 
       for (const patient of allPatientList) {
         const patientSessions = getSessionsByPatient(patient.id);
 
         if (patientSessions.length === 0) {
-          rows.push({
-            "Patient Name": patient.name,
-            "Doctor's Name": "",
-            "Body Part": "",
-            Device: "",
-            "Delivered Date": "",
-            "SX Date": "",
-            "Insurance Type": "",
-            "PS Name": "",
-            Address: "",
-            "Script Name": "",
-            "Script Type": "",
-            "Created On": "",
-            "Last Updated": formatScriptDate(patient.createdAt),
-            "Other Fields": "",
-          });
+          rows.push([
+            patient.name,
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            formatScriptDate(patient.createdAt),
+            "",
+          ]);
           continue;
         }
 
         for (const session of patientSessions) {
           const pv = session.pillValues ?? {};
-          // resolveTemplate is now safely called from component scope above
           const template = resolveTemplate(session.templateId);
+          const createdAt = (session as any).createdAt ?? session.savedAt;
 
           const customEntries = Object.entries(pv)
             .filter(([key]) => !STANDARD_KEYS.has(key))
@@ -129,37 +157,37 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
             })
             .join(" | ");
 
-          const createdAt = (session as any).createdAt ?? session.savedAt;
-
-          rows.push({
-            "Patient Name": pv["patient_name"] ?? patient.name,
-            "Doctor's Name": pv["doctors_name"] ?? "",
-            "Body Part": pv["body_part"] ?? "",
-            Device: pv["device"] ?? "",
-            "Delivered Date": pv["delivered_date"] ?? "",
-            "SX Date": pv["sx_date"] ?? "",
-            "Insurance Type": pv["insurance_type"] ?? "",
-            "PS Name": pv["ps_name"] ?? "",
-            Address: pv["address"] ?? "",
-            "Script Name": session.name,
-            "Script Type": template.name,
-            "Created On": formatScriptDate(createdAt),
-            "Last Updated": formatScriptDate(session.savedAt),
-            "Other Fields": customEntries,
-          });
+          rows.push([
+            pv["patient_name"] ?? patient.name,
+            pv["doctors_name"] ?? "",
+            pv["body_part"] ?? "",
+            pv["device"] ?? "",
+            pv["delivered_date"] ?? "",
+            pv["sx_date"] ?? "",
+            pv["insurance_type"] ?? "",
+            pv["ps_name"] ?? "",
+            pv["address"] ?? "",
+            session.name,
+            template.name,
+            formatScriptDate(createdAt),
+            formatScriptDate(session.savedAt),
+            customEntries,
+          ]);
         }
       }
 
-      const worksheet = XLSX.utils.json_to_sheet(rows);
-      worksheet["!cols"] = [
-        { wch: 20 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 16 },
-        { wch: 14 }, { wch: 16 }, { wch: 16 }, { wch: 22 }, { wch: 28 },
-        { wch: 20 }, { wch: 22 }, { wch: 22 }, { wch: 40 },
-      ];
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Scripts");
+      const csv = [headers, ...rows]
+        .map((row) => row.map(escapeCell).join(","))
+        .join("\n");
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
       const today = new Date().toISOString().split("T")[0];
-      XLSX.writeFile(workbook, `patient-data-${today}.xlsx`);
+      a.href = url;
+      a.download = `patient-data-${today}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Export failed:", err);
       alert("Export failed. Please try again.");
@@ -243,7 +271,11 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
           </p>
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
             <div className="flex items-center gap-3 px-4 py-1">
-              <img src={profileIcon} alt="" className="w-5 h-5 opacity-40 flex-shrink-0" />
+              <img
+                src={profileIcon}
+                alt=""
+                className="w-5 h-5 opacity-40 flex-shrink-0"
+              />
               <input
                 data-testid="name-input"
                 type="text"
@@ -277,7 +309,16 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
             >
               <div className="w-8 h-8 rounded-lg bg-[#EEF6DC] flex items-center justify-center flex-shrink-0">
                 {/* Simple template/document icon using inline SVG */}
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7A9E2E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#7A9E2E"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
                   <rect x="3" y="3" width="18" height="18" rx="2" />
                   <line x1="7" y1="8" x2="17" y2="8" />
                   <line x1="7" y1="12" x2="17" y2="12" />
@@ -315,7 +356,15 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
               className="w-full flex items-center cursor-pointer gap-3.5 px-4 py-3.5 hover:bg-gray-50 transition-colors text-left disabled:opacity-50"
             >
               <div className="w-8 h-8 rounded-lg bg-[#EEF6DC] flex items-center justify-center flex-shrink-0">
-                <img src={downloadIcon} alt="" className="w-4 h-4" style={{ filter: "invert(40%) sepia(60%) saturate(500%) hue-rotate(60deg)" }} />
+                <img
+                  src={downloadIcon}
+                  alt=""
+                  className="w-4 h-4"
+                  style={{
+                    filter:
+                      "invert(40%) sepia(60%) saturate(500%) hue-rotate(60deg)",
+                  }}
+                />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-gray-800">
@@ -334,13 +383,23 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
               className="w-full flex items-center cursor-pointer gap-3.5 px-4 py-3.5 hover:bg-red-50 transition-colors text-left disabled:opacity-50"
             >
               <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
-                <img src={trashIcon} alt="" className="w-4 h-4" style={{ filter: "invert(30%) sepia(80%) saturate(500%) hue-rotate(330deg)" }} />
+                <img
+                  src={trashIcon}
+                  alt=""
+                  className="w-4 h-4"
+                  style={{
+                    filter:
+                      "invert(30%) sepia(80%) saturate(500%) hue-rotate(330deg)",
+                  }}
+                />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-red-500">
                   {isClearing ? "Clearing…" : "Clear All Data"}
                 </p>
-                <p className="text-xs text-gray-400 mt-0.5">This action cannot be undone</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  This action cannot be undone
+                </p>
               </div>
               <span className="text-gray-300 text-lg">›</span>
             </button>
@@ -355,10 +414,20 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
           <div className="bg-white rounded-xl shadow-sm overflow-hidden">
             <div className="flex items-center gap-3.5 px-4 py-3.5">
               <div className="w-8 h-8 rounded-lg bg-[#EEF6DC] flex items-center justify-center flex-shrink-0">
-                <img src={infoIcon} alt="" className="w-4 h-4" style={{ filter: "invert(40%) sepia(60%) saturate(500%) hue-rotate(60deg)" }} />
+                <img
+                  src={infoIcon}
+                  alt=""
+                  className="w-4 h-4"
+                  style={{
+                    filter:
+                      "invert(40%) sepia(60%) saturate(500%) hue-rotate(60deg)",
+                  }}
+                />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-gray-800">About Advanced Therapeutics</p>
+                <p className="text-sm font-semibold text-gray-800">
+                  About Advanced Therapeutics
+                </p>
                 <p className="text-xs text-gray-400 mt-0.5">Version 1.0.0</p>
               </div>
             </div>
@@ -372,9 +441,12 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
       {showClearConfirm && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl">
-            <p className="text-sm font-semibold text-gray-800 mb-1">Clear all data?</p>
+            <p className="text-sm font-semibold text-gray-800 mb-1">
+              Clear all data?
+            </p>
             <p className="text-sm text-gray-500 mb-6">
-              Every patient and script will be permanently deleted. This cannot be undone.
+              Every patient and script will be permanently deleted. This cannot
+              be undone.
             </p>
             <div className="flex gap-3 justify-end">
               <button

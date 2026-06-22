@@ -138,7 +138,7 @@ export function PatientCard({
       {/* Script count badge */}
       {!isRenaming && (
         <span className="flex-shrink-0 text-xs font-semibold text-[#5C7D20] bg-[#EEF6DC] px-2.5 py-1 rounded-md">
-          {scriptCount} {scriptCount === 1 ? "Script" : "Script"}
+          {scriptCount} {scriptCount === 1 ? "Script" : "Scripts"}
         </span>
       )}
 
