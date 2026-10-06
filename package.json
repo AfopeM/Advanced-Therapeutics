@@ -8,7 +8,13 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test:e2e:critical": "playwright test tests/e2e/critical-path.spec.ts"
+    "test:e2e:canvas": "playwright test tests/e2e/canvas.spec.ts",
+    "test:e2e:critical": "playwright test tests/e2e/critical-path.spec.ts",
+    "test:e2e:folder": "playwright test tests/e2e/folder.spec.ts",
+    "test:e2e:hub": "playwright test tests/e2e/hub.spec.ts",
+    "test:e2e:settings": "playwright test tests/e2e/settings.spec.ts",
+    "test:e2e:workspace": "playwright test tests/e2e/workspace.spec.ts",
+    "test:unit": "vitest run tests/unit"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.4",
