@@ -32,6 +32,8 @@ const PILL_PLACEHOLDER_MAP: Record<string, string> = {
   insurance_type: "Medicare",
   ps_name: "Jane Rivera",
   address: "123 Main St",
+  device_price: "50",
+  rental_duration: "2 weeks",
 };
 
 function getPillIcon(key: string): string {

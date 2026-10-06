@@ -46,7 +46,7 @@ This is [User] with Advanced Therapeutics. We're just reaching out in regards to
 
 We just want to confirm if the one we delivered to you is still working properly or if you need a replacement?
 
-Please feel free to reply to this message or give us a call back at 631-909-6290. Thank you!`,
+Please feel free to reply to this message or give us a call back at (631) 909-6290. Thank you!`,
   },
 
   {
@@ -70,7 +70,7 @@ Hi [patient_first_name], this is in regards to the [device] that Dr. [doctors_na
 
 It's already covered by your [insurance_type] Insurance and we're giving you a call to let you know that the device will be delivered to you in the Surgery Center on [sx_date].
 
-Our product specialist, [ps_name], will be the one to bring it to you. But if you do have any questions any time, feel free to call us at 631-909-6290, okay?
+Our product specialist, [ps_name], will be the one to bring it to you. But if you do have any questions any time, feel free to call us at (631) 909-6290, okay?
 
 Alright! Well, it was great talking to you! Thank you so much for your time, [patient_first_name]. Have a great day!
 
@@ -81,7 +81,7 @@ This is [User] with Advanced Therapeutics and this is in regards to the [device]
 
 It's already covered by your [insurance_type] Insurance and we're reaching out to let you know that the device will be delivered to you in the Surgery Center on [sx_date].
 
-Our product specialist, [ps_name], will be the one to bring it to you. If you do have any questions any time, feel free to call us at 631-909-6290. Thank you!`,
+Our product specialist, [ps_name], will be the one to bring it to you. If you do have any questions any time, feel free to call us at (631) 909-6290. Thank you!`,
   },
 
   {
@@ -124,7 +124,7 @@ Let me just quickly send that to you. There!
 
 Can you also please confirm if the link is accessible to watch the video while you have me?
 
-Alright! We're all set! Once you receive the [device], you can just go back to this message. But if you do have any questions about setup or anything else, you can reply to my text or give us a call at 631-909-6290. Okay?
+Alright! We're all set! Once you receive the [device], you can just go back to this message. But if you do have any questions about setup or anything else, you can reply to my text or give us a call at (631) 909-6290. Okay?
 
 Alright! Well, it was great talking to you! Thank you so much for your time, [patient_first_name]. Have a great day! Take care!
 
@@ -135,7 +135,48 @@ This is [User] with Advanced Therapeutics and this is in regards to the [device]
 
 It's already covered by your [insurance_type] Insurance and we're reaching out to coordinate the delivery.
 
-Let me know when it would be best to call you back or feel free to give us a call back at 631-909-6290. Thank you!`,
+Let me know when it would be best to call you back or feel free to give us a call back at (631) 909-6290. Thank you!`,
+  },
+
+  {
+    id: "thermx_self_pay",
+    name: "Thermx Self Pay",
+    badgeClass: "bg-pink-100 text-pink-700",
+    pills: [
+      { key: "patient_first_name", label: "Patient First Name" },
+      { key: "doctors_name", label: "Doctor's Name" },
+      { key: "body_part", label: "Body Part" },
+      { key: "rental_duration", label: "Rental Duration" },
+      { key: "device_price", label: "Device Price" },
+    ],
+    script_text: `Hi [patient_first_name],
+
+This is [User] with Advanced Therapeutics Durable Medical Equipment.
+
+This is in regards to the Cold Therapy Compression Device that Dr. [doctors_name] prescribed for your [body_part].
+
+I'm calling to coordinate a delivery and to set your expectations, your insurance would not cover the expense for this and the out of pocket cost for the [rental_duration] rental of the device would be $[device_price].
+
+Please feel free to reply to this message or you can give me a call back at (631) 909-6290. Thank you!`,
+  },
+
+  {
+    id: "sms",
+    name: "SMS",
+    badgeClass: "bg-orange-100 text-orange-700",
+    pills: [
+      { key: "patient_first_name", label: "Patient First Name" },
+      { key: "doctors_name", label: "Doctor's Name" },
+      { key: "body_part", label: "Body Part" },
+      { key: "insurance_type", label: "Insurance Type" },
+    ],
+    script_text: `Hi [patient_first_name],
+
+This is [User] with Advanced Therapeutics and this is in regards to the Cold Therapy Compression Device that Dr. [doctors_name] had prescribed for your [body_part].
+
+It's already covered by your [insurance_type] Insurance and we're reaching out to coordinate the delivery.
+
+Feel free to reply to this text to let me know when it would be best to call you back or give us a call back at (631) 909-6290. Thank you!`,
   },
 ];
 

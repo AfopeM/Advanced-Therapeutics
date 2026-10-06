@@ -44,7 +44,15 @@ export const usePatientStore = create<PatientState>((set, get) => ({
   renamePatient: async (id: string, newName: string) => {
     const patients = { ...get().patients };
     if (!patients[id]) return;
-    patients[id] = { ...patients[id], name: newName };
+    patients[id] = {
+      ...patients[id],
+      name: newName,
+      sharedPillValues: {
+        ...(patients[id].sharedPillValues ?? {}),
+        patient_name: newName,
+        patient_first_name: newName.split(" ")[0] ?? "",
+      },
+    };
     await savePatients(patients);
     set({ patients });
   },

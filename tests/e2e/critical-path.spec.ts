@@ -201,7 +201,7 @@ test("workspace: saving once creates exactly one session; back does not duplicat
   expect(sessions).toHaveLength(1);
   expect(sessions[0].patientId).toBe("p1");
   // The workspace names new sessions after the active template, not the patient.
-  expect(sessions[0].name).toBe("Alice Call Script");
+  expect(sessions[0].name).toBe("Alice — Call Script");
 
   await context.close();
 });
