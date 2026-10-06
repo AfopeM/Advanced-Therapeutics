@@ -2,6 +2,11 @@ import { z } from "zod";
 import { PatientSchema, type Patient } from "./schemas/patient.schema";
 import { SessionSchema, type Session } from "./schemas/session.schema";
 import { UserSchema, type User } from "./schemas/user.schema";
+import {
+  BackupStatusSchema,
+  DEFAULT_BACKUP_STATUS,
+  type BackupStatus,
+} from "./schemas/backupStatus.schema";
 
 // Add this import at the top of storage.ts, alongside the existing schema imports:
 import {
@@ -80,4 +85,23 @@ export async function saveUserTemplates(
   templates: Record<string, UserTemplate>,
 ): Promise<void> {
   return set("userTemplates", templates);
+}
+
+// --- Backup status ---
+// Deliberately NOT one of the four backed-up keys, so import and
+// "Clear All Data" never touch it.
+
+export async function loadBackupStatus(): Promise<BackupStatus> {
+  return (await get("backupStatus", BackupStatusSchema)) ?? DEFAULT_BACKUP_STATUS;
+}
+
+// ponytail: read-then-write isn't atomic, so two simultaneous updates could
+// lose one. Fine with one side panel. Upgrade path: queue updates through a
+// single promise chain.
+export async function updateBackupStatus(
+  patch: Partial<BackupStatus>,
+): Promise<BackupStatus> {
+  const next = { ...(await loadBackupStatus()), ...patch };
+  await set("backupStatus", next);
+  return next;
 }

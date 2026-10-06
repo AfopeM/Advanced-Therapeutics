@@ -4,6 +4,7 @@ import { usePatientStore } from "../../shared/store/usePatientStore";
 import { useSessionStore } from "../../shared/store/useSessionStore";
 import { useTemplateStore } from "../../shared/store/useTemplateStore";
 import { formatScriptDate } from "../../shared/utils";
+import { BackupSection } from "./BackupSection";
 import profileIcon from "../../../assets/icons/profile.svg";
 import downloadIcon from "../../../assets/icons/download.svg";
 import trashIcon from "../../../assets/icons/trash.svg";
@@ -343,6 +344,9 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
             </button>
           </div>
         </div>
+
+        {/* BACKUP */}
+        <BackupSection />
 
         {/* DATA */}
         <div>
