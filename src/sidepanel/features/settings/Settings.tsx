@@ -375,7 +375,7 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
                   {isExporting ? "Exporting…" : "Export All Data"}
                 </p>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  Download a .xlsx spreadsheet of all scripts
+                  Download a .csv spreadsheet of all scripts
                 </p>
               </div>
               <span className="text-gray-300 text-lg">›</span>
@@ -432,7 +432,7 @@ export function Settings({ onClose, guardrailMessage }: SettingsProps) {
                 <p className="text-sm font-semibold text-gray-800">
                   About Advanced Therapeutics
                 </p>
-                <p className="text-xs text-gray-400 mt-0.5">Version 1.0.0</p>
+                <p className="text-xs text-gray-400 mt-0.5">Version 2.0.0</p>
               </div>
             </div>
           </div>

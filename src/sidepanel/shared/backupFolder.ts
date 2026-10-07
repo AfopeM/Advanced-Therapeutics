@@ -1,4 +1,5 @@
 import type { Backup } from "./schemas/backup.schema";
+import type { BackupStatus } from "./schemas/backupStatus.schema";
 
 const DB_NAME = "backup-folder";
 const STORE_NAME = "handles";
@@ -97,6 +98,51 @@ const ensureWritePermission = async (
   }
 };
 
+type AutoSlot = BackupStatus["nextAutoSlot"];
+
+export const PERMISSION_NEEDED_MESSAGE =
+  "Backup paused: click to re-enable folder access.";
+
+const NEXT_SLOT: Record<AutoSlot, AutoSlot> = { 1: 2, 2: 3, 3: 1 };
+
+export const advanceSlot = (slot: AutoSlot): AutoSlot => NEXT_SLOT[slot];
+
+export const autoBackupName = (slot: AutoSlot): string =>
+  `backup-auto-${slot}.json`;
+
+// Shared by manual and automatic backups.
+const writeBackupFile = async (
+  folder: FileSystemDirectoryHandle,
+  name: string,
+  backup: Backup,
+): Promise<void> => {
+  const file = await folder.getFileHandle(name, { create: true });
+  const writable = await file.createWritable();
+  try {
+    await writable.write(JSON.stringify(backup, null, 2));
+    await writable.close();
+  } catch (error) {
+    // Release the file so a retry isn't blocked. The old contents stay intact.
+    await writable.abort().catch(() => undefined);
+    throw error;
+  }
+};
+
+// Overwrites the file for this slot. Returns the file name it wrote.
+export const writeAutoBackup = async (
+  folder: FileSystemDirectoryHandle,
+  backup: Backup,
+  slot: AutoSlot,
+): Promise<string> => {
+  // No user click here, so we may only CHECK permission, never ask for it.
+  if ((await folder.queryPermission({ mode: "readwrite" })) !== "granted") {
+    throw new Error(PERMISSION_NEEDED_MESSAGE);
+  }
+  const name = autoBackupName(slot);
+  await writeBackupFile(folder, name, backup);
+  return name;
+};
+
 // Returns the file name it wrote. Never overwrites an existing file.
 export const writeManualBackup = async (
   folder: FileSystemDirectoryHandle,
@@ -115,9 +161,6 @@ export const writeManualBackup = async (
     }
   }
 
-  const file = await folder.getFileHandle(name, { create: true });
-  const writable = await file.createWritable();
-  await writable.write(JSON.stringify(backup, null, 2));
-  await writable.close();
+  await writeBackupFile(folder, name, backup);
   return name;
 };

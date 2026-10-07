@@ -276,7 +276,42 @@ describe("BackupSchema", () => {
 // ==================
 // FOLDER
 // ==================
-import { manualBackupName } from "../../src/sidepanel/shared/backupFolder";
+import {
+  manualBackupName,
+  advanceSlot,
+  autoBackupName,
+  writeAutoBackup,
+  PERMISSION_NEEDED_MESSAGE,
+} from "../../src/sidepanel/shared/backupFolder";
+
+describe("auto backup slots", () => {
+  it("names files by slot", () => {
+    expect(autoBackupName(2)).toBe("backup-auto-2.json");
+  });
+
+  it("rotates 1 → 2 → 3 → 1", () => {
+    expect(advanceSlot(1)).toBe(2);
+    expect(advanceSlot(2)).toBe(3);
+    expect(advanceSlot(3)).toBe(1);
+  });
+
+  it("refuses to write when permission is not granted, and touches no file", async () => {
+    const getFileHandle = vi.fn();
+    const folder = {
+      queryPermission: vi.fn(async () => "prompt"),
+      getFileHandle,
+    } as unknown as FileSystemDirectoryHandle;
+
+    await expect(
+      writeAutoBackup(
+        folder,
+        { version: 1, patients: {}, sessions: {}, userTemplates: {} },
+        1,
+      ),
+    ).rejects.toThrow(PERMISSION_NEEDED_MESSAGE);
+    expect(getFileHandle).not.toHaveBeenCalled();
+  });
+});
 
 describe("manualBackupName", () => {
   const moment = new Date(2026, 9, 5, 14, 30, 7); // month 9 = October
