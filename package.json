@@ -14,7 +14,8 @@
     "test:e2e:hub": "playwright test tests/e2e/hub.spec.ts",
     "test:e2e:settings": "playwright test tests/e2e/settings.spec.ts",
     "test:e2e:workspace": "playwright test tests/e2e/workspace.spec.ts",
-    "test:unit": "vitest run tests/unit"
+    "test:unit": "vitest run tests/unit",
+    "test:e2e": "vitest run tests/e2e"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.4",

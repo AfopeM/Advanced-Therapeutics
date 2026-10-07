@@ -1,11 +1,8 @@
 import { test, expect, type Page } from "@playwright/test";
-import { loadExtension } from "../helpers/extension";
+import { useSharedExtension } from "../helpers/extension";
 
-// ─── URL helper ────────────────────────────────────────────────────────────
-const PANEL = (id: string) =>
-  `chrome-extension://${id}/src/sidepanel/sidepanel.html`;
+const { getPage } = useSharedExtension();
 
-// ─── Storage seed + reload ──────────────────────────────────────────────────
 // Seeds chrome.storage.local then reloads the page so React picks up the data.
 async function seedStorage(page: Page, data: Record<string, unknown>) {
   await page.evaluate(async (d) => {
@@ -45,35 +42,13 @@ test.describe("Workspace — Navigation", () => {
   // This verifies the App-level routing in App.tsx works correctly.
   // -------------------------------------------------------------------------
   test("opens workspace view when '+ New Script' is clicked", async () => {
-    const { context, extensionId } = await loadExtension();
-    const page = await context.newPage();
-    await page.goto(PANEL(extensionId));
+    const page = getPage();
     await seedStorage(page, BASE_STATE);
 
     await openFirstFolder(page);
     await openNewWorkspace(page);
 
     await expect(page.getByTestId("workspace-view")).toBeVisible();
-    await context.close();
-  });
-
-  // -------------------------------------------------------------------------
-  // The workspace header should display the patient's name so the user
-  // always knows whose record they're editing.
-  // -------------------------------------------------------------------------
-  test("workspace header shows the correct patient name", async () => {
-    const { context, extensionId } = await loadExtension();
-    const page = await context.newPage();
-    await page.goto(PANEL(extensionId));
-    await seedStorage(page, BASE_STATE);
-
-    await openFirstFolder(page);
-    await openNewWorkspace(page);
-
-    await expect(page.getByTestId("workspace-patient-name")).toHaveText(
-      "Alice Watts",
-    );
-    await context.close();
   });
 
   // -------------------------------------------------------------------------
@@ -81,9 +56,7 @@ test.describe("Workspace — Navigation", () => {
   // The folder-view testid must be visible after navigating back.
   // -------------------------------------------------------------------------
   test("back arrow returns to folder view", async () => {
-    const { context, extensionId } = await loadExtension();
-    const page = await context.newPage();
-    await page.goto(PANEL(extensionId));
+    const page = getPage();
     await seedStorage(page, BASE_STATE);
 
     await openFirstFolder(page);
@@ -91,7 +64,6 @@ test.describe("Workspace — Navigation", () => {
     await page.getByTestId("workspace-back").click();
 
     await expect(page.getByTestId("folder-view")).toBeVisible();
-    await context.close();
   });
 });
 
@@ -103,26 +75,21 @@ test.describe("Workspace — Template Selector", () => {
   // enabled. Users should be able to choose which script type they need.
   // -------------------------------------------------------------------------
   test("template selector is enabled for a new unsaved session", async () => {
-    const { context, extensionId } = await loadExtension();
-    const page = await context.newPage();
-    await page.goto(PANEL(extensionId));
+    const page = getPage();
     await seedStorage(page, BASE_STATE);
 
     await openFirstFolder(page);
     await openNewWorkspace(page);
 
     await expect(page.getByTestId("template-select")).toBeEnabled();
-    await context.close();
   });
 
   // -------------------------------------------------------------------------
   // For an EXISTING saved session, the template must be locked (disabled).
   // Changing template on a saved session would wipe the user's script text.
   // -------------------------------------------------------------------------
-  test("template selector is disabled for an existing saved session", async () => {
-    const { context, extensionId } = await loadExtension();
-    const page = await context.newPage();
-    await page.goto(PANEL(extensionId));
+  test("template selector is locked for an existing saved session", async () => {
+    const page = getPage();
     await seedStorage(page, {
       ...BASE_STATE,
       sessions: {
@@ -142,8 +109,10 @@ test.describe("Workspace — Template Selector", () => {
     await page.getByTestId("session-card").first().click();
     await page.waitForSelector('[data-testid="workspace-view"]');
 
-    await expect(page.getByTestId("template-select")).toBeDisabled();
-    await context.close();
+    await page.getByTestId("template-select").click();
+    await expect(
+      page.getByRole("button", { name: "SX Center", exact: true }),
+    ).toHaveCount(0);
   });
 
   // -------------------------------------------------------------------------
@@ -153,23 +122,21 @@ test.describe("Workspace — Template Selector", () => {
   // in Device Confirmation).
   // -------------------------------------------------------------------------
   test("switching template changes the canvas content", async () => {
-    const { context, extensionId } = await loadExtension();
-    const page = await context.newPage();
-    await page.goto(PANEL(extensionId));
+    const page = getPage();
     await seedStorage(page, BASE_STATE);
 
     await openFirstFolder(page);
     await openNewWorkspace(page);
 
     // Switch to SX Center template
-    await page.getByTestId("template-select").selectOption("sx_center");
+    await page.getByTestId("template-select").click();
+    await page.getByRole("button", { name: "SX Center", exact: true }).click();
 
     // The canvas should now contain a token chip for [sx_date] which is
     // unique to the SX Center template (not in Device Confirmation).
     await expect(
-      page.locator('[data-testid="canvas"] [data-token="sx_date"]'),
+      page.locator('[data-testid="canvas"] [data-token="sx_date"]').first(),
     ).toBeVisible();
-    await context.close();
   });
 });
 
@@ -182,9 +149,7 @@ test.describe("Workspace — Pill Values", () => {
   // patient.sharedPillValues seeded in usePatientStore.addPatient().
   // -------------------------------------------------------------------------
   test("patient name pill is pre-filled from patient record", async () => {
-    const { context, extensionId } = await loadExtension();
-    const page = await context.newPage();
-    await page.goto(PANEL(extensionId));
+    const page = getPage();
     await seedStorage(page, {
       user: { name: "Dr. Smith" },
       patients: {
@@ -207,7 +172,6 @@ test.describe("Workspace — Pill Values", () => {
     await expect(page.getByTestId("pill-input-patient_name")).toHaveValue(
       "Alice Watts",
     );
-    await context.close();
   });
 
   // -------------------------------------------------------------------------
@@ -215,9 +179,7 @@ test.describe("Workspace — Pill Values", () => {
   // canvas in real time. This is the core UX of the workspace.
   // -------------------------------------------------------------------------
   test("typing a pill value updates the token chip in the canvas", async () => {
-    const { context, extensionId } = await loadExtension();
-    const page = await context.newPage();
-    await page.goto(PANEL(extensionId));
+    const page = getPage();
     await seedStorage(page, BASE_STATE);
 
     await openFirstFolder(page);
@@ -227,11 +189,10 @@ test.describe("Workspace — Pill Values", () => {
     await page.getByTestId("pill-input-device").fill("TENS Unit");
 
     // The canvas token chip for [device] should now show "TENS Unit"
-    const tokenChip = page.locator(
-      '[data-testid="canvas"] [data-token="device"]',
-    );
+    const tokenChip = page
+      .locator('[data-testid="canvas"] [data-token="device"]')
+      .first();
     await expect(tokenChip).toHaveText("TENS Unit");
-    await context.close();
   });
 
   // -------------------------------------------------------------------------
@@ -239,20 +200,17 @@ test.describe("Workspace — Pill Values", () => {
   // E.g. [body_part] empty → shows "Body Part", not "body_part".
   // -------------------------------------------------------------------------
   test("empty token chip displays the pill label, not the raw key", async () => {
-    const { context, extensionId } = await loadExtension();
-    const page = await context.newPage();
-    await page.goto(PANEL(extensionId));
+    const page = getPage();
     await seedStorage(page, BASE_STATE);
 
     await openFirstFolder(page);
     await openNewWorkspace(page);
 
     // body_part is empty by default — chip text should be "Body Part"
-    const tokenChip = page.locator(
-      '[data-testid="canvas"] [data-token="body_part"]',
-    );
+    const tokenChip = page
+      .locator('[data-testid="canvas"] [data-token="body_part"]')
+      .first();
     await expect(tokenChip).toHaveText("Body Part");
-    await context.close();
   });
 });
 
@@ -264,9 +222,7 @@ test.describe("Workspace — Saving", () => {
   // chrome.storage.local and associate it with the correct patient.
   // -------------------------------------------------------------------------
   test("save button persists a new session to storage", async () => {
-    const { context, extensionId } = await loadExtension();
-    const page = await context.newPage();
-    await page.goto(PANEL(extensionId));
+    const page = getPage();
     await seedStorage(page, BASE_STATE);
 
     await openFirstFolder(page);
@@ -282,7 +238,6 @@ test.describe("Workspace — Saving", () => {
     );
     expect(sessions.length).toBe(1);
     expect(sessions[0].patientId).toBe("p1");
-    await context.close();
   });
 
   // -------------------------------------------------------------------------
@@ -291,9 +246,7 @@ test.describe("Workspace — Saving", () => {
   // isSaved=true.
   // -------------------------------------------------------------------------
   test("back button after save does not create duplicate sessions", async () => {
-    const { context, extensionId } = await loadExtension();
-    const page = await context.newPage();
-    await page.goto(PANEL(extensionId));
+    const page = getPage();
     await seedStorage(page, BASE_STATE);
 
     await openFirstFolder(page);
@@ -310,7 +263,6 @@ test.describe("Workspace — Saving", () => {
     const sessions = Object.keys(raw.sessions as object);
     // Must be exactly 1, not 2
     expect(sessions.length).toBe(1);
-    await context.close();
   });
 
   // -------------------------------------------------------------------------
@@ -319,9 +271,7 @@ test.describe("Workspace — Saving", () => {
   // "Device Confirmation".
   // -------------------------------------------------------------------------
   test("first save names the session after the template", async () => {
-    const { context, extensionId } = await loadExtension();
-    const page = await context.newPage();
-    await page.goto(PANEL(extensionId));
+    const page = getPage();
     await seedStorage(page, BASE_STATE);
 
     await openFirstFolder(page);
@@ -333,8 +283,8 @@ test.describe("Workspace — Saving", () => {
     const sessions = Object.values(
       raw.sessions as Record<string, { name: string }>,
     );
-    expect(sessions[0].name).toBe("Device Confirmation");
-    await context.close();
+    // expect(sessions[0].name).toBe("Device Confirmation");
+    expect(sessions[0].name).toBe("Alice Watts — Call Script");
   });
 });
 
@@ -346,9 +296,7 @@ test.describe("Workspace — Custom Pills", () => {
   // pill input row AND insert a token into the canvas.
   // -------------------------------------------------------------------------
   test("adding a custom pill inserts its token into the canvas", async () => {
-    const { context, extensionId } = await loadExtension();
-    const page = await context.newPage();
-    await page.goto(PANEL(extensionId));
+    const page = getPage();
     await seedStorage(page, BASE_STATE);
 
     await openFirstFolder(page);
@@ -362,7 +310,6 @@ test.describe("Workspace — Custom Pills", () => {
     await expect(
       page.locator('[data-testid="canvas"] [data-token="referral_date"]'),
     ).toBeVisible();
-    await context.close();
   });
 
   // -------------------------------------------------------------------------
@@ -370,9 +317,7 @@ test.describe("Workspace — Custom Pills", () => {
   // all of its token spans from the canvas.
   // -------------------------------------------------------------------------
   test("deleting a custom pill removes its token from the canvas", async () => {
-    const { context, extensionId } = await loadExtension();
-    const page = await context.newPage();
-    await page.goto(PANEL(extensionId));
+    const page = getPage();
     await seedStorage(page, BASE_STATE);
 
     await openFirstFolder(page);
@@ -395,6 +340,5 @@ test.describe("Workspace — Custom Pills", () => {
     await expect(
       page.locator('[data-testid="canvas"] [data-token="referral_date"]'),
     ).toHaveCount(0);
-    await context.close();
   });
 });

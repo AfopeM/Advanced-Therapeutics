@@ -1,8 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
-import { loadExtension } from "../helpers/extension";
+import { useSharedExtension } from "../helpers/extension";
 
-const PANEL = (id: string) =>
-  `chrome-extension://${id}/src/sidepanel/sidepanel.html`;
+const { getPage } = useSharedExtension();
 
 async function seedStorage(page: Page, data: Record<string, unknown>) {
   await page.evaluate(async (d) => {
@@ -30,9 +29,7 @@ test.describe("Canvas — Token Chip Rendering", () => {
   // We check a representative subset to confirm the build pipeline works.
   // -------------------------------------------------------------------------
   test("renders token chips for template keys", async () => {
-    const { context, extensionId } = await loadExtension();
-    const page = await context.newPage();
-    await page.goto(PANEL(extensionId));
+    const page = getPage();
     await seedStorage(page, {
       user: { name: "Dr. Smith" },
       patients: { p1: { id: "p1", name: "Alice", createdAt: 1000 } },
@@ -47,7 +44,6 @@ test.describe("Canvas — Token Chip Rendering", () => {
         page.locator(`[data-testid="canvas"] [data-token="${key}"]`).first(),
       ).toBeVisible();
     }
-    await context.close();
   });
 
   // -------------------------------------------------------------------------
@@ -56,9 +52,7 @@ test.describe("Canvas — Token Chip Rendering", () => {
   // correctly from Workspace → Canvas.
   // -------------------------------------------------------------------------
   test("empty token chip shows the human label, not the raw key", async () => {
-    const { context, extensionId } = await loadExtension();
-    const page = await context.newPage();
-    await page.goto(PANEL(extensionId));
+    const page = getPage();
     await seedStorage(page, {
       user: { name: "Dr. Smith" },
       patients: { p1: { id: "p1", name: "Alice", createdAt: 1000 } },
@@ -72,7 +66,6 @@ test.describe("Canvas — Token Chip Rendering", () => {
       .locator('[data-testid="canvas"] [data-token="device"]')
       .first();
     await expect(chip).toHaveText("Device");
-    await context.close();
   });
 
   // -------------------------------------------------------------------------
@@ -81,9 +74,7 @@ test.describe("Canvas — Token Chip Rendering", () => {
   // This tests the surgical DOM update path in Canvas.tsx (not a full re-render).
   // -------------------------------------------------------------------------
   test("filled token chip shows the entered value", async () => {
-    const { context, extensionId } = await loadExtension();
-    const page = await context.newPage();
-    await page.goto(PANEL(extensionId));
+    const page = getPage();
     await seedStorage(page, {
       user: { name: "Dr. Smith" },
       patients: { p1: { id: "p1", name: "Alice", createdAt: 1000 } },
@@ -97,7 +88,6 @@ test.describe("Canvas — Token Chip Rendering", () => {
       .locator('[data-testid="canvas"] [data-token="device"]')
       .first();
     await expect(chip).toHaveText("TENS Unit");
-    await context.close();
   });
 
   // -------------------------------------------------------------------------
@@ -105,9 +95,7 @@ test.describe("Canvas — Token Chip Rendering", () => {
   // from the user store — not a pill input the doctor fills in manually.
   // -------------------------------------------------------------------------
   test("[User] token chip shows the doctor's name from the user store", async () => {
-    const { context, extensionId } = await loadExtension();
-    const page = await context.newPage();
-    await page.goto(PANEL(extensionId));
+    const page = getPage();
     await seedStorage(page, {
       user: { name: "Dr. Smith" },
       patients: { p1: { id: "p1", name: "Alice", createdAt: 1000 } },
@@ -126,7 +114,6 @@ test.describe("Canvas — Token Chip Rendering", () => {
     for (let i = 0; i < count; i++) {
       await expect(userChips.nth(i)).toHaveText("Dr. Smith");
     }
-    await context.close();
   });
 });
 
@@ -138,9 +125,7 @@ test.describe("Canvas — Token Chip Styles", () => {
   // This is a UX signal that the field hasn't been filled in yet.
   // -------------------------------------------------------------------------
   test("empty token chip has blue dashed-border style", async () => {
-    const { context, extensionId } = await loadExtension();
-    const page = await context.newPage();
-    await page.goto(PANEL(extensionId));
+    const page = getPage();
     await seedStorage(page, {
       user: { name: "Dr. Smith" },
       patients: { p1: { id: "p1", name: "Alice", createdAt: 1000 } },
@@ -154,9 +139,7 @@ test.describe("Canvas — Token Chip Styles", () => {
       .first();
 
     // The inline style contains the blue colour hex used in EMPTY_CHIP
-    const style = await chip.getAttribute("style");
-    expect(style).toContain("3b82f6"); // blue border colour from EMPTY_CHIP
-    await context.close();
+    await expect(chip).toHaveCSS("border-top-color", "rgb(59, 130, 246)"); // blue border colour from EMPTY_CHIP
   });
 
   // -------------------------------------------------------------------------
@@ -164,9 +147,7 @@ test.describe("Canvas — Token Chip Styles", () => {
   // This is a UX signal that the field has been completed.
   // -------------------------------------------------------------------------
   test("filled token chip switches to green style", async () => {
-    const { context, extensionId } = await loadExtension();
-    const page = await context.newPage();
-    await page.goto(PANEL(extensionId));
+    const page = getPage();
     await seedStorage(page, {
       user: { name: "Dr. Smith" },
       patients: { p1: { id: "p1", name: "Alice", createdAt: 1000 } },
@@ -180,9 +161,7 @@ test.describe("Canvas — Token Chip Styles", () => {
       .locator('[data-testid="canvas"] [data-token="device"]')
       .first();
 
-    const style = await chip.getAttribute("style");
-    expect(style).toContain("16a34a"); // green border colour from FILLED_CHIP
-    await context.close();
+    await expect(chip).toHaveCSS("border-top-color", "rgb(22, 163, 74)"); // green border colour from FILLED_CHIP
   });
 });
 
@@ -203,9 +182,7 @@ test.describe("Canvas — Keyboard Guard (token protection)", () => {
   //  5. Confirm the chip still exists
   // -------------------------------------------------------------------------
   test("Backspace adjacent to a token chip does not delete it", async () => {
-    const { context, extensionId } = await loadExtension();
-    const page = await context.newPage();
-    await page.goto(PANEL(extensionId));
+    const page = getPage();
     await seedStorage(page, {
       user: { name: "Dr. Smith" },
       patients: { p1: { id: "p1", name: "Alice", createdAt: 1000 } },
@@ -223,9 +200,7 @@ test.describe("Canvas — Keyboard Guard (token protection)", () => {
       const canvas = document.querySelector(
         '[data-testid="canvas"]',
       ) as HTMLElement;
-      const chip = canvas.querySelector(
-        '[data-token="device"]',
-      ) as HTMLElement;
+      const chip = canvas.querySelector('[data-token="device"]') as HTMLElement;
       if (!chip) return;
 
       const range = document.createRange();
@@ -243,16 +218,11 @@ test.describe("Canvas — Keyboard Guard (token protection)", () => {
 
     // The chip must still be in the DOM
     await expect(
-      page
-        .locator('[data-testid="canvas"] [data-token="device"]')
-        .first(),
+      page.locator('[data-testid="canvas"] [data-token="device"]').first(),
     ).toBeVisible();
     await expect(
-      page
-        .locator('[data-testid="canvas"] [data-token="device"]')
-        .first(),
+      page.locator('[data-testid="canvas"] [data-token="device"]').first(),
     ).toHaveText("TENS Unit");
-    await context.close();
   });
 
   // -------------------------------------------------------------------------
@@ -260,9 +230,7 @@ test.describe("Canvas — Keyboard Guard (token protection)", () => {
   // remove the chip. Canvas.tsx prevents this for selections containing chips.
   // -------------------------------------------------------------------------
   test("selecting a range containing a token chip and pressing Delete is blocked", async () => {
-    const { context, extensionId } = await loadExtension();
-    const page = await context.newPage();
-    await page.goto(PANEL(extensionId));
+    const page = getPage();
     await seedStorage(page, {
       user: { name: "Dr. Smith" },
       patients: { p1: { id: "p1", name: "Alice", createdAt: 1000 } },
@@ -273,14 +241,18 @@ test.describe("Canvas — Keyboard Guard (token protection)", () => {
     await page.getByTestId("pill-input-device").fill("TENS Unit");
 
     // Select all content in the first line that contains the [device] chip
+    const before = await page
+      .locator('[data-testid="canvas"] [data-token="device"]')
+      .count();
+
     await page.evaluate(() => {
       const canvas = document.querySelector(
         '[data-testid="canvas"]',
       ) as HTMLElement;
-      const firstLine = canvas.querySelector(".sl") as HTMLElement;
-      if (!firstLine) return;
+      const chip = canvas.querySelector('[data-token="device"]') as HTMLElement;
+      const line = chip.closest(".sl") as HTMLElement;
       const range = document.createRange();
-      range.selectNodeContents(firstLine);
+      range.selectNodeContents(line);
       const sel = window.getSelection();
       sel?.removeAllRanges();
       sel?.addRange(range);
@@ -288,11 +260,9 @@ test.describe("Canvas — Keyboard Guard (token protection)", () => {
 
     await page.keyboard.press("Delete");
 
-    // At least one [device] chip should still exist somewhere in the canvas
     await expect(
-      page.locator('[data-testid="canvas"] [data-token="device"]').first(),
-    ).toBeVisible();
-    await context.close();
+      page.locator('[data-testid="canvas"] [data-token="device"]'),
+    ).toHaveCount(before);
   });
 });
 
@@ -304,9 +274,7 @@ test.describe("Canvas — Restoring a saved session", () => {
   // should be restored into both the pill inputs AND the canvas token chips.
   // -------------------------------------------------------------------------
   test("reopening a saved session restores pill values into canvas chips", async () => {
-    const { context, extensionId } = await loadExtension();
-    const page = await context.newPage();
-    await page.goto(PANEL(extensionId));
+    const page = getPage();
     await seedStorage(page, {
       user: { name: "Dr. Smith" },
       patients: {
@@ -346,8 +314,6 @@ test.describe("Canvas — Restoring a saved session", () => {
       .first();
     await expect(chip).toHaveText("Knee Brace");
 
-    const style = await chip.getAttribute("style");
-    expect(style).toContain("16a34a"); // green = filled
-    await context.close();
+    await expect(chip).toHaveCSS("border-top-color", "rgb(22, 163, 74)");
   });
 });
